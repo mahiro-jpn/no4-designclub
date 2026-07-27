@@ -1,3 +1,5 @@
+.gold-particles{position:fixed;inset:0;z-index:500;pointer-events:none;mix-blend-mode:screen}
+
 :root{
   --bg:#fbfaf8;
   --bg-soft:#f3f1ec;

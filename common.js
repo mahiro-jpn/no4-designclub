@@ -70,4 +70,94 @@
       el.style.transform = 'perspective(1200px) rotateY(0) rotateX(0) translateZ(0)';
     });
   });
+
+  /* カーソル追従の金パーティクル（きらきらトレイル。スポットライトのグローとは別演出） */
+  (function(){
+    var rootGold = getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() || '#ad7f39';
+    var COLORS = [rootGold, '#d9b878', '#f5f4f1'];
+    var MAX = 60;
+
+    var canvas = document.createElement('canvas');
+    canvas.className = 'gold-particles';
+    canvas.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(canvas);
+    var ctx = canvas.getContext('2d');
+
+    var dpr = Math.min(devicePixelRatio || 1, 2);
+    function resize(){
+      dpr = Math.min(devicePixelRatio || 1, 2);
+      canvas.width = innerWidth * dpr;
+      canvas.height = innerHeight * dpr;
+      canvas.style.width = innerWidth + 'px';
+      canvas.style.height = innerHeight + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    addEventListener('resize', resize, {passive:true});
+
+    var mouseX = 0, mouseY = 0, lastX = 0, lastY = 0, moving = false;
+    var particles = [];
+    var rafId = null;
+
+    addEventListener('mousemove', function(e){
+      mouseX = e.clientX; mouseY = e.clientY; moving = true;
+      if(!rafId) rafId = requestAnimationFrame(tick);
+    }, {passive:true});
+
+    document.addEventListener('visibilitychange', function(){
+      if(document.hidden && rafId){ cancelAnimationFrame(rafId); rafId = null; }
+      else if(!document.hidden && (particles.length || moving) && !rafId){ rafId = requestAnimationFrame(tick); }
+    });
+
+    function spawn(x, y){
+      if(particles.length >= MAX) return;
+      var angle = Math.random() * Math.PI * 2;
+      var speed = 0.15 + Math.random() * 0.35;
+      particles.push({
+        x: x, y: y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 0.25,
+        size: 1.5 + Math.random() * 2.5,
+        color: COLORS[(Math.random() * COLORS.length) | 0],
+        life: 0,
+        maxLife: 45 + Math.random() * 30
+      });
+    }
+
+    function tick(){
+      rafId = null;
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+      var dx = mouseX - lastX, dy = mouseY - lastY;
+      var dist = Math.hypot(dx, dy);
+      if(moving && dist > 2){
+        var steps = Math.min(3, Math.max(1, Math.round(dist / 12)));
+        for(var i = 0; i < steps; i++){
+          spawn(lastX + dx * (i + 1) / steps, lastY + dy * (i + 1) / steps);
+        }
+      }
+      lastX = mouseX; lastY = mouseY; moving = false;
+
+      particles = particles.filter(function(p){
+        p.life++;
+        if(p.life >= p.maxLife) return false;
+        p.x += p.vx; p.y += p.vy;
+        p.vx *= 0.985; p.vy *= 0.985;
+        var t = 1 - p.life / p.maxLife;
+        ctx.globalCompositeOperation = 'screen';
+        var g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3);
+        g.addColorStop(0, p.color);
+        g.addColorStop(1, 'transparent');
+        ctx.fillStyle = g;
+        ctx.globalAlpha = t;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+        ctx.fill();
+        return true;
+      });
+      ctx.globalAlpha = 1;
+
+      if(particles.length) rafId = requestAnimationFrame(tick);
+    }
+  })();
 })();
