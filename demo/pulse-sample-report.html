@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TERRACE EIGHT — PULSE Monthly Report</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#07090f;
+    --panel:rgba(18,24,38,.62);
+    --panel-border:rgba(196,151,74,.18);
+    --gold:#c4974a;
+    --gold-bright:#e8c98a;
+    --green:#3ddc97;
+    --red:#ff5c7a;
+    --text:#e8e6e1;
+    --sub:#8a93a6;
+    --serif:'EB Garamond',Georgia,'Times New Roman',serif;
+    --sans:'Noto Sans JP','Yu Gothic UI','Hiragino Sans',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--bg);color:var(--text);font-family:var(--sans);font-weight:300;
+    min-width:1100px;overflow-x:auto;
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -5%, rgba(196,151,74,.09), transparent 60%),
+      radial-gradient(ellipse 1000px 600px at 90% 0%, rgba(77,163,255,.06), transparent 60%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:1200px;margin:0 auto;padding:48px 40px 80px}
+  header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px}
+  .brand h1{
+    font-family:var(--serif);font-size:30px;font-weight:400;letter-spacing:.22em;
+    background:linear-gradient(120deg,#f0e2c4 0%,var(--gold) 45%,#8a6a34 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .brand p{font-size:11px;letter-spacing:.38em;color:var(--sub);margin-top:6px;text-transform:uppercase}
+  .asof{font-size:12px;color:var(--sub);letter-spacing:.1em;text-align:right}
+  .asof b{color:var(--gold);font-weight:400}
+  .disclaimer{
+    margin:22px 0 40px;padding:12px 18px;border:1px solid var(--panel-border);border-radius:8px;
+    font-size:11px;color:var(--sub);letter-spacing:.05em;background:rgba(196,151,74,.05);
+  }
+  .sec{margin-top:52px}
+  .sec-title{
+    font-family:var(--serif);font-size:14px;letter-spacing:.3em;color:var(--gold);
+    text-transform:uppercase;display:flex;align-items:center;gap:16px;margin-bottom:22px;
+  }
+  .sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(196,151,74,.4),transparent)}
+  .sec-title .jp{font-family:var(--sans);font-size:11px;letter-spacing:.15em;color:var(--sub)}
+  .glass{
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:14px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    box-shadow:0 2px 4px rgba(0,0,0,.4),0 12px 28px rgba(0,0,0,.45);
+  }
+  .summary{padding:28px 30px}
+  .summary li{list-style:none;padding-left:22px;position:relative;font-size:14.5px;line-height:2;color:#dedad0}
+  .summary li + li{margin-top:6px}
+  .summary li::before{content:'—';position:absolute;left:0;color:var(--gold)}
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .kpi{padding:22px 24px}
+  .kpi .label{font-size:11px;letter-spacing:.14em;color:var(--sub);text-transform:uppercase}
+  .kpi .val{font-family:var(--serif);font-size:32px;color:#f5f4f1;margin-top:10px}
+  .kpi .delta{font-size:12px;margin-top:6px;letter-spacing:.04em}
+  .delta.up{color:var(--green)}
+  .delta.down{color:var(--red)}
+  .delta.flat{color:var(--sub)}
+  .anomaly{
+    padding:24px 28px;border-left:3px solid var(--red);
+  }
+  .anomaly .tag{font-size:11px;letter-spacing:.2em;color:var(--red);text-transform:uppercase}
+  .anomaly p{margin-top:10px;font-size:14.5px;line-height:1.9;color:#dedad0}
+  .diag p{font-size:14.5px;line-height:2;color:#dedad0;padding:26px 30px}
+  .diag p + p{margin-top:0}
+  .actions{padding:26px 30px}
+  .actions ol{padding-left:20px}
+  .actions li{font-size:14.5px;line-height:1.9;color:#dedad0;padding-left:6px}
+  .actions li + li{margin-top:14px}
+  .actions b{color:var(--gold-bright);font-weight:500}
+  .chart-box{padding:26px 30px 20px;height:280px}
+  .foot{margin-top:60px;text-align:center;font-size:11px;letter-spacing:.2em;color:var(--sub);text-transform:uppercase}
+  .foot b{color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <h1>TERRACE EIGHT</h1>
+      <p>PULSE Monthly Report</p>
+    </div>
+    <div class="asof">対象期間<br><b>2026年7月1日 — 7月31日</b></div>
+  </header>
+
+  <div class="disclaimer">※ デモ表示：ブランド名・数値はすべて架空のサンプルデータです。レポート構成・分析ロジックは実際の運用フォーマットに基づいています。</div>
+
+  <div class="sec">
+    <div class="sec-title">Summary <span class="jp">今月のサマリー</span></div>
+    <div class="glass summary">
+      <ul>
+        <li>総流入は前月比+18%。特にInstagram経由の直接流入が急増し、投稿からの導線が機能している</li>
+        <li>7月中旬、GBP（Googleビジネスプロフィール）の検索表示回数が一時的に急落。原因を特定し月末までに回復</li>
+        <li>直帰率は改善傾向。メニューページへの導線強化が効果を出し始めている</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">KPI <span class="jp">主要指標</span></div>
+    <div class="kpi-grid">
+      <div class="glass kpi"><div class="label">Users</div><div class="val">1,842</div><div class="delta up">+18.4% MoM</div></div>
+      <div class="glass kpi"><div class="label">Sessions</div><div class="val">2,310</div><div class="delta up">+12.1% MoM</div></div>
+      <div class="glass kpi"><div class="label">GBP検索表示</div><div class="val">6,140</div><div class="delta down">-9.2% MoM</div></div>
+      <div class="glass kpi"><div class="label">平均滞在時間</div><div class="val">3:41</div><div class="delta up">+22秒</div></div>
+      <div class="glass kpi"><div class="label">直帰率</div><div class="val">44.2%</div><div class="delta up">-6.1pt</div></div>
+      <div class="glass kpi"><div class="label">モバイル比率</div><div class="val">71%</div><div class="delta flat">±0pt</div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Anomaly Detected <span class="jp">異常検知</span></div>
+    <div class="glass anomaly">
+      <div class="tag">Alert — GBP Impressions</div>
+      <p>7/12〜7/19の週、GBP検索表示回数が前週比-31%まで落ち込む異常を検知。同時期にクチコミへの返信対応が10日間滞っていたことが判明し、Googleのローカル検索ランキングへの影響が疑われる。</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Diagnosis <span class="jp">診断</span></div>
+    <div class="glass diag">
+      <p>GA4だけを見ていると「サイト流入は伸びている」という一面的な結論で終わってしまう。GBP・口コミ対応状況・GA4を横断して照らし合わせたところ、クチコミ返信の停滞とGBP表示回数の急落が時期的に一致していることが分かった。単一の数値ではなく、複数のデータソースを重ねて初めて見える相関だった。</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Recommended Actions <span class="jp">改善提言</span></div>
+    <div class="glass actions">
+      <ol>
+        <li><b>クチコミ返信を48時間以内ルール化。</b>返信の即応性がGoogleのローカルSEO評価に直結している可能性が高い</li>
+        <li><b>Instagramプロフィールの予約リンクを最上部に固定。</b>ダイレクト流入の多くがInstagram経由と判明したため、導線をさらに強化する</li>
+        <li><b>月次でGBP・GA4・口コミの3点セットを必ず横断チェック。</b>単一指標では見えない相関を毎月拾う運用に</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title">Trend <span class="jp">推移</span></div>
+    <div class="glass chart-box">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+
+  <div class="foot">TERRACE EIGHT × <b>PULSE</b> — No4.DesignClub Diagnostic Report (Sample)</div>
+</div>
+
+<script>
+const ctx = document.getElementById('trendChart');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: ['7/1','7/8','7/15','7/22','7/29'],
+    datasets: [{
+      label: 'GBP検索表示',
+      data: [7480, 7120, 5210, 5860, 7350],
+      borderColor: '#c4974a',
+      backgroundColor: 'rgba(196,151,74,.12)',
+      tension: .35,
+      fill: true,
+      pointBackgroundColor: '#e8c98a',
+      pointRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#e8e6e1', font: { family: 'Noto Sans JP' } } } },
+    scales: {
+      x: { ticks: { color: '#8a93a6' }, grid: { color: 'rgba(255,255,255,.05)' } },
+      y: { ticks: { color: '#8a93a6' }, grid: { color: 'rgba(255,255,255,.05)' } }
+    }
+  }
+});
+</script>
+</body>
+</html>
