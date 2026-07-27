@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MERIDIAN CAPITAL — Investment Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#07090f;
+    --bg2:#0b101c;
+    --panel:rgba(18,24,38,.62);
+    --panel-border:rgba(196,151,74,.18);
+    --gold:#c4974a;
+    --gold-bright:#e8c98a;
+    --blue:#4da3ff;
+    --purple:#8b7cf6;
+    --green:#3ddc97;
+    --red:#ff5c7a;
+    --text:#e8e6e1;
+    --sub:#8a93a6;
+    --serif:'EB Garamond',Georgia,'Times New Roman',serif;
+    --sans:'Noto Sans JP','Yu Gothic UI','Hiragino Sans',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    font-weight:300;
+    min-width:1280px;
+    overflow-x:auto;
+    background-image:
+      radial-gradient(ellipse 900px 500px at 15% -5%, rgba(139,124,246,.10), transparent 60%),
+      radial-gradient(ellipse 1000px 600px at 90% 0%, rgba(77,163,255,.08), transparent 60%),
+      radial-gradient(ellipse 800px 700px at 50% 110%, rgba(196,151,74,.07), transparent 60%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:1440px;margin:0 auto;padding:48px 40px 80px}
+
+  /* ===== Header ===== */
+  header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:44px}
+  .brand h1{
+    font-family:var(--serif);font-size:34px;font-weight:400;letter-spacing:.28em;
+    background:linear-gradient(120deg,#f0e2c4 0%,var(--gold) 45%,#8a6a34 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .brand p{font-size:11px;letter-spacing:.42em;color:var(--sub);margin-top:6px;text-transform:uppercase}
+  .asof{font-size:12px;color:var(--sub);letter-spacing:.12em;text-align:right}
+  .asof b{color:var(--gold);font-weight:400}
+
+  /* ===== Section title ===== */
+  .sec{margin-top:56px}
+  .sec-title{
+    font-family:var(--serif);font-size:15px;letter-spacing:.34em;color:var(--gold);
+    text-transform:uppercase;display:flex;align-items:center;gap:16px;margin-bottom:22px;
+  }
+  .sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(196,151,74,.45),transparent)}
+  .sec-title .jp{font-family:var(--sans);font-size:11px;letter-spacing:.2em;color:var(--sub)}
+
+  /* ===== Glass panel base ===== */
+  .glass{
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:16px;
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    box-shadow:
+      0 2px 4px rgba(0,0,0,.4),
+      0 12px 28px rgba(0,0,0,.45),
+      0 30px 60px rgba(0,0,0,.35),
+      inset 0 1px 0 rgba(255,255,255,.05);
+  }
+
+  /* ===== KPI cards (tilt) ===== */
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;perspective:1200px}
+  .kpi{
+    padding:26px 26px 22px;position:relative;overflow:hidden;
+    transform-style:preserve-3d;
+    transition:transform .18s ease-out, box-shadow .3s ease;
+    will-change:transform;
+  }
+  .kpi::before{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(135deg,rgba(255,255,255,.07) 0%,transparent 40%);
+  }
+  .kpi:hover{
+    box-shadow:
+      0 2px 4px rgba(0,0,0,.4),
+      0 16px 36px rgba(0,0,0,.55),
+      0 40px 80px rgba(0,0,0,.4),
+      0 0 42px rgba(196,151,74,.18),
+      inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .kpi .label{font-size:11px;letter-spacing:.26em;color:var(--sub);text-transform:uppercase;margin-bottom:12px}
+  .kpi .value{font-family:var(--serif);font-size:34px;font-weight:400;letter-spacing:.02em;line-height:1.1}
+  .kpi .delta{font-size:13px;margin-top:10px;letter-spacing:.05em}
+  .kpi .glow-line{position:absolute;bottom:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.55}
+  .kpi.hero .value{
+    font-size:40px;
+    background:linear-gradient(120deg,#fff 0%,var(--gold-bright) 50%,var(--gold) 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .kpi.hero{border-color:rgba(196,151,74,.4)}
+  .kpi.hero .glow-line{opacity:1;box-shadow:0 0 14px rgba(196,151,74,.8)}
+  .pos{color:var(--green)}.neg{color:var(--red)}.flat{color:var(--sub)}
+  .alloc-mini{display:flex;flex-direction:column;gap:7px;margin-top:4px}
+  .alloc-mini .row{display:flex;justify-content:space-between;font-size:12.5px}
+  .alloc-mini .row span:first-child{color:var(--sub)}
+
+  /* ===== Table ===== */
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead th{
+    text-align:right;padding:14px 16px;font-weight:400;font-size:11px;letter-spacing:.18em;
+    color:var(--sub);text-transform:uppercase;border-bottom:1px solid rgba(196,151,74,.22);
+  }
+  thead th:first-child,thead th:nth-child(2){text-align:left}
+  tbody td{padding:15px 16px;text-align:right;border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap}
+  tbody td:first-child,tbody td:nth-child(2){text-align:left}
+  tbody tr{transition:background .2s}
+  tbody tr:hover{background:rgba(196,151,74,.06)}
+  .ticker{font-family:var(--serif);font-size:15px;letter-spacing:.1em;color:var(--gold-bright)}
+  .cat-tag{display:inline-block;font-size:10px;letter-spacing:.14em;color:var(--sub);
+    border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:2px 10px;margin-left:10px}
+  tfoot td{padding:16px;text-align:right;font-family:var(--serif);font-size:15px;
+    border-top:1px solid rgba(196,151,74,.3);color:var(--gold-bright)}
+  .empty-note{padding:34px;text-align:center;color:var(--sub);font-size:13px;letter-spacing:.1em}
+
+  /* ===== Progress bars ===== */
+  .nisa-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .bar-card{padding:24px 28px}
+  .bar-card.full{grid-column:1/-1}
+  .bar-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+  .bar-head .name{font-size:13px;letter-spacing:.14em}
+  .bar-head .nums{font-size:12.5px;color:var(--sub)}
+  .bar-head .nums b{color:var(--text);font-weight:400;font-family:var(--serif);font-size:16px}
+  .bar{height:10px;border-radius:6px;background:rgba(255,255,255,.06);overflow:hidden;position:relative}
+  .bar .fill{
+    height:100%;border-radius:6px;min-width:0;
+    background:linear-gradient(90deg,#8a6a34,var(--gold),var(--gold-bright));
+    box-shadow:0 0 12px rgba(196,151,74,.6);
+    transition:width 1.2s cubic-bezier(.22,1,.36,1);
+  }
+  .bar .fill.blue{background:linear-gradient(90deg,#1f5fa8,var(--blue),#9fd0ff);box-shadow:0 0 12px rgba(77,163,255,.55)}
+  .bar .fill.purple{background:linear-gradient(90deg,#5648b8,var(--purple),#c3baff);box-shadow:0 0 12px rgba(139,124,246,.55)}
+  .bar-pct{font-size:11px;color:var(--sub);margin-top:8px;letter-spacing:.1em}
+
+  /* ===== Charts ===== */
+  .chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:22px}
+  .chart-card{padding:26px}
+  .chart-card h3{font-size:12px;letter-spacing:.22em;color:var(--sub);text-transform:uppercase;margin-bottom:18px}
+  .chart-box{position:relative;height:320px}
+
+  /* ===== Reports ===== */
+  .report{padding:26px 30px;margin-bottom:18px;position:relative;transition:box-shadow .3s,border-color .3s}
+  .report:hover{border-color:rgba(196,151,74,.4);
+    box-shadow:0 12px 28px rgba(0,0,0,.5),0 0 30px rgba(196,151,74,.12),inset 0 1px 0 rgba(255,255,255,.06)}
+  .report .r-head{display:flex;align-items:baseline;gap:18px;margin-bottom:12px}
+  .report .r-date{font-family:var(--serif);font-size:14px;color:var(--gold);letter-spacing:.12em}
+  .report .r-title{font-size:16px;letter-spacing:.06em;font-weight:400}
+  .report .r-body{font-size:13.5px;line-height:2;color:#c5c9d3}
+
+  /* ===== Goal ===== */
+  .goal-card{padding:32px 36px}
+  .goal-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px}
+  .goal-top .t{font-size:13px;letter-spacing:.2em;color:var(--sub)}
+  .goal-top .v{font-family:var(--serif);font-size:26px;color:var(--gold-bright)}
+
+  /* ===== Reference (details) ===== */
+  details{margin-bottom:12px;border-radius:12px;overflow:hidden}
+  summary{
+    cursor:pointer;padding:16px 22px;font-size:13.5px;letter-spacing:.1em;list-style:none;
+    display:flex;align-items:center;gap:12px;transition:background .2s;
+  }
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:'◇';color:var(--gold);font-size:11px;transition:transform .25s}
+  details[open] summary::before{content:'◆'}
+  summary:hover{background:rgba(196,151,74,.07)}
+  .ref-body{padding:4px 24px 20px 45px;font-size:13px;line-height:1.95;color:#b9bfcc}
+  .ref-body b{color:var(--gold-bright);font-weight:400}
+
+  footer{margin-top:70px;text-align:center;font-size:10px;letter-spacing:.4em;color:#3d4557;text-transform:uppercase}
+
+  /* ===== Analysis (Valuation / Health / Watchlist) ===== */
+  .mode-toggle{display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:.18em;color:var(--sub);user-select:none}
+  .mode-toggle .m-label{transition:color .25s}
+  .mode-toggle .m-label.on{color:var(--gold-bright)}
+  .switch{position:relative;width:46px;height:24px;border-radius:14px;cursor:pointer;
+    background:rgba(255,255,255,.08);border:1px solid rgba(196,151,74,.3);transition:background .25s}
+  .switch .knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+    background:linear-gradient(135deg,var(--gold-bright),var(--gold));
+    box-shadow:0 0 10px rgba(196,151,74,.6);transition:left .25s cubic-bezier(.22,1,.36,1)}
+  body.mode-adv .switch{background:rgba(196,151,74,.25)}
+  body.mode-adv .switch .knob{left:24px}
+  .adv-only{display:none}
+  body.mode-adv .adv-only{display:block}
+  body.mode-adv td.adv-only,body.mode-adv th.adv-only{display:table-cell}
+
+  .badge{display:inline-block;font-size:11px;letter-spacing:.14em;padding:4px 14px;border-radius:20px;white-space:nowrap}
+  .badge.cheap{color:var(--green);border:1px solid rgba(61,220,151,.45);background:rgba(61,220,151,.08)}
+  .badge.fair{color:var(--gold-bright);border:1px solid rgba(196,151,74,.5);background:rgba(196,151,74,.08)}
+  .badge.rich{color:var(--red);border:1px solid rgba(255,92,122,.45);background:rgba(255,92,122,.08)}
+  .badge.na{color:var(--sub);border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04)}
+
+  .val-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .val-card{padding:26px 28px}
+  .val-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:14px}
+  .val-head .t-line{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .val-head .price{font-family:var(--serif);font-size:24px;color:var(--text)}
+  .val-head .price small{font-size:12px;color:var(--sub);margin-left:6px}
+  .val-sub{font-size:11px;color:var(--sub);letter-spacing:.08em;margin-bottom:14px}
+  .simple-sum{font-size:13px;line-height:1.9;color:#c5c9d3;margin-bottom:6px}
+  .fact-list{list-style:none;margin:10px 0 0}
+  .fact-list li{font-size:12.5px;line-height:1.85;color:#b9bfcc;padding-left:16px;position:relative}
+  .fact-list li::before{content:'·';position:absolute;left:2px;color:var(--gold)}
+  .fact-list li .v-tag{font-size:10px;letter-spacing:.1em;margin-left:8px;padding:1px 8px;border-radius:10px}
+  .v-tag.cheap{color:var(--green);border:1px solid rgba(61,220,151,.4)}
+  .v-tag.expensive{color:var(--red);border:1px solid rgba(255,92,122,.4)}
+  .v-tag.neutral{color:var(--sub);border:1px solid rgba(255,255,255,.15)}
+
+  .metric-table{width:100%;margin-top:14px;font-size:12.5px}
+  .metric-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05)}
+  .metric-table td:first-child{color:var(--sub);text-align:left;white-space:nowrap}
+  .metric-table td:not(:first-child){text-align:right;font-family:var(--serif);font-size:14px}
+  .metric-table .mt-head td{color:var(--sub);font-family:var(--sans);font-size:10px;letter-spacing:.14em;text-transform:uppercase;border-bottom:1px solid rgba(196,151,74,.25)}
+
+  .range52{margin-top:16px}
+  .range52 .r-lbl{display:flex;justify-content:space-between;font-size:10.5px;color:var(--sub);margin-bottom:6px;letter-spacing:.08em}
+  .range52 .r-track{position:relative;height:6px;border-radius:4px;
+    background:linear-gradient(90deg,rgba(61,220,151,.35),rgba(196,151,74,.35),rgba(255,92,122,.35))}
+  .range52 .r-dot{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%);
+    background:var(--gold-bright);box-shadow:0 0 10px rgba(196,151,74,.9),0 0 3px #000}
+
+  .health-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .health-card{padding:26px 28px}
+  .spark-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+  .spark-row .s-name{font-size:12px;color:var(--sub);letter-spacing:.08em;white-space:nowrap}
+  .spark-row .s-val{font-family:var(--serif);font-size:16px;white-space:nowrap}
+  .spark-row svg{flex:1;max-width:180px;height:34px;overflow:visible}
+  .spark-line{fill:none;stroke:var(--gold);stroke-width:1.6}
+  .spark-fill{fill:rgba(196,151,74,.15);stroke:none}
+  .spark-dot{fill:var(--gold-bright)}
+  .spark-zero{stroke:rgba(255,255,255,.18);stroke-width:1;stroke-dasharray:3 3}
+
+  .ana-note{font-size:11px;color:var(--sub);letter-spacing:.06em;line-height:1.8;margin-top:18px}
+  .ana-note b{color:var(--gold-bright);font-weight:400}
+  .src-tag{display:inline-block;font-size:10px;letter-spacing:.14em;border-radius:20px;padding:2px 10px;margin-left:10px}
+  .src-tag.holding{color:var(--gold-bright);border:1px solid rgba(196,151,74,.45)}
+  .src-tag.watchlist{color:var(--blue);border:1px solid rgba(77,163,255,.4)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <h1>MERIDIAN CAPITAL</h1>
+      <p>Private Wealth Dashboard</p>
+    </div>
+    <div class="asof">DATA AS OF<br><b id="asof-date">—</b></div>
+  </header>
+
+  <!-- ============================================================
+       ▼▼▼ データ管理エリア（ここを更新） ▼▼▼
+       キイチ / Kuro はこの <script> 内の定数だけ書き換えればOK。
+       下のUIはすべて自動計算・自動描画される。
+  ============================================================ -->
+  <script>
+  // ── 為替レート（米国株の円換算に使用。ここを更新）──
+  const USDJPY = 160.0;
+
+  // ── 現金（円。ここを更新）──
+  const CASH_JPY = 850000;
+
+  // ── 保有銘柄（ここを更新：1行1銘柄で追加）──
+  // currency:'USD' は avgCost/currentPrice をドルで入力（円換算は自動）
+  // currency:'JPY' は円で入力
+  // category: '個別株' | 'ETF' | '投資信託' など自由（配分グラフに反映）
+  const HOLDINGS = [
+    { ticker:'VOO',  name:'Vanguard S&P 500 ETF', category:'ETF',    qty:85, avgCost:480, currentPrice:565, currency:'USD' },
+    { ticker:'TSLA', name:'Tesla, Inc.',          category:'個別株', qty:40, avgCost:310, currentPrice:407.76, currency:'USD' },
+  ];
+
+  // ── ウォッチリスト（保有していないが監視中の銘柄。ここに追記）──
+  // 保有と同じ形式だが qty/avgCost は不要。fetch_financials.py が自動で分析対象に含める。
+  // 例: { ticker:'MSFT', name:'Microsoft Corporation', category:'個別株' },
+  const WATCHLIST = [
+  ];
+
+  // ── NISA枠 使用額（円・年間／生涯累計。ここを更新）──
+  const NISA = {
+    tsumitateUsed: 780000,  // つみたて投資枠 今年の使用額（上限 1,200,000）
+    growthUsed:    1450000, // 成長投資枠 今年の使用額（上限 2,400,000）
+    lifetimeUsed:  3200000, // 生涯投資枠 累計使用額（上限 18,000,000／うち成長枠 12,000,000）
+  };
+
+  // ── 資産推移（月次。ここに追記していく）──
+  // 例: { month:'2026-08', total:150000 },
+  const HISTORY = [
+    { month:'2026-02', total:7200000 },
+    { month:'2026-03', total:8350000 },
+    { month:'2026-04', total:8900000 },
+    { month:'2026-05', total:9850000 },
+    { month:'2026-06', total:10600000 },
+    { month:'2026-07', total:11150000 },
+  ];
+
+  // ── 目標（ここを更新：amount 円）──
+  const GOAL = { amount: 30000000, targetYear: 2032 };
+
+  // ── クロの分析レポート（ここに追記：新しいものを配列の先頭へ）──
+  const REPORTS = [
+    {
+      date:'2026-07-05',
+      title:'投資方針レビュー',
+      body:'NISA成長投資枠を中心に、米国ETF・米国個別株を軸としたポートフォリオ構成を継続。5〜10年の中長期視点で、コア資産（インデックスETF）とサテライト資産（個別株）を分けて管理する方針を維持。'
+    },
+  ];
+  </script>
+  <!-- ▲▲▲ データ管理エリアここまで ▲▲▲ ======================== -->
+
+  <!-- ============================================================
+       ▼▼▼ 自動分析データ（fetch_financials.py が書き換える。手動編集しない）▼▼▼
+  ============================================================ -->
+  <!-- AUTO ANALYSIS DATA START -->
+<script>
+// fetch_financials.py が自動生成（手動編集しない）
+const ANALYSIS = {"fetchedAt":"2026-07-11 12:31","sectorPeDate":"2026-07-11","stocks":{"VOO":{"status":"unavailable","name":"Vanguard S&P 500 ETF","source":"holding","reason":"FMP無料枠の対象外シンボル（ETF等の個別データはPremium限定）"},"TSLA":{"status":"ok","name":"Tesla, Inc.","source":"holding","sector":"Consumer Cyclical","industry":"Auto - Manufacturers","beta":1.802,"quote":{"price":407.76,"changePct":0.29763,"yearHigh":498.83,"yearLow":297.82,"pos52w":54.7,"marketCap":1531432387200,"priceAvg50":408.5616,"priceAvg200":418.27216},"valuation":{"perTTM":338.7836490528415,"per5yAvg":166.74909328997458,"perSector":82.01154188083659,"pbrTTM":15.677669242174126,"pbr5yAvg":18.22124176479328,"pegTTM":-8.667581670572696,"dcf":18.512914238588927,"dcfGapPct":-95.45985034368528,"targetConsensus":446.11,"targetHigh":540,"targetLow":360,"fcfYieldPct":0.46},"health":{"roeTTM":4.79,"roeSeries":[{"year":"2021","v":18.3},{"year":"2022","v":28.15},{"year":"2023","v":23.95},{"year":"2024","v":9.78},{"year":"2025","v":4.62}],"fcfSeries":[{"year":"2021","v":3483000000},{"year":"2022","v":7552000000},{"year":"2023","v":4357000000},{"year":"2024","v":3581000000},{"year":"2025","v":6220000000}],"fcfMarginSeries":[{"year":"2021","v":6.47},{"year":"2022","v":9.27},{"year":"2023","v":4.5},{"year":"2024","v":3.67},{"year":"2025","v":6.56}],"debtToEquity":0.10972144223646373,"currentRatio":2.043119104809889,"interestCoverage":14.44542772861357,"netDebtToEBITDA":-0.6110880914891854,"totalDebt":8376000000,"equity":82137000000,"cash":16513000000,"revenueCagr5y":15.210225739354444,"epsCagr5y":-9.778708889584031},"zone":{"label":"割高ゾーン","signals":[{"text":"簡易DCF理論値 $19 は現在株価を 95% 下回る（前提条件は非開示のため参考値）","verdict":"expensive"},{"text":"PER(TTM) 338.8倍 は自社5年平均 166.7倍 の 203% の水準","verdict":"expensive"},{"text":"PER(TTM) 338.8倍 vs セクター平均 82.0倍（413%）","verdict":"expensive"}]},"warnings":[]}}};
+</script>
+<!-- AUTO ANALYSIS DATA END -->
+
+  <!-- 1. 資産サマリー -->
+  <section class="sec" style="margin-top:0">
+    <div class="sec-title">Portfolio Summary <span class="jp">資産サマリー</span></div>
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="glass kpi hero tilt">
+        <div class="label">Total Assets ｜ 総資産</div>
+        <div class="value" id="kpi-total">—</div>
+        <div class="delta flat">現金 + 有価証券（円換算）</div>
+        <div class="glow-line"></div>
+      </div>
+      <div class="glass kpi tilt">
+        <div class="label">Unrealized P/L ｜ 評価損益</div>
+        <div class="value" id="kpi-pl">—</div>
+        <div class="delta" id="kpi-pl-pct">—</div>
+        <div class="glow-line"></div>
+      </div>
+      <div class="glass kpi tilt">
+        <div class="label">Invested ｜ 投資元本</div>
+        <div class="value" id="kpi-cost">—</div>
+        <div class="delta flat" id="kpi-count">—</div>
+        <div class="glow-line"></div>
+      </div>
+      <div class="glass kpi tilt">
+        <div class="label">Allocation ｜ 資産配分</div>
+        <div class="alloc-mini" id="kpi-alloc"></div>
+        <div class="glow-line"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 保有銘柄一覧 -->
+  <section class="sec">
+    <div class="sec-title">Holdings <span class="jp">保有銘柄</span></div>
+    <div class="glass" style="padding:10px 8px">
+      <table>
+        <thead><tr>
+          <th>Ticker</th><th>銘柄名</th><th>数量</th><th>取得単価</th><th>現在値</th>
+          <th>評価額（円）</th><th>損益（円）</th><th>損益率</th>
+        </tr></thead>
+        <tbody id="holdings-body"></tbody>
+        <tfoot id="holdings-foot"></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <!-- 2.5 バリュエーション分析（自動更新） -->
+  <section class="sec">
+    <div class="sec-title" style="align-items:center">
+      Valuation Deep-Dive <span class="jp">バリュエーション分析</span>
+      <span style="flex:0 0 auto;margin-left:auto" class="mode-toggle">
+        <span class="m-label on" id="lbl-simple">シンプル</span>
+        <span class="switch" id="mode-switch" title="表示モード切替"><span class="knob"></span></span>
+        <span class="m-label" id="lbl-adv">アドバンスド</span>
+      </span>
+    </div>
+    <div class="val-grid" id="val-grid"></div>
+    <details class="glass" style="margin-top:18px">
+      <summary>用語の説明（PER / PBR / PEG / DCF / 52週レンジ）</summary>
+      <div class="ref-body">
+        <b>PER（株価収益率）</b>：株価が「1年分の利益の何倍か」。低いほど利益に対して安い。業種によって標準的な水準が違うため、自社の過去平均・セクター平均と比べて見る。<br>
+        <b>PBR（株価純資産倍率）</b>：株価が「会社の純資産の何倍か」。<br>
+        <b>PEG</b>：PERを利益成長率で割ったもの。成長スピードに対して割高すぎないかを見る（1未満=割安の示唆・2超=割高の示唆が目安）。<br>
+        <b>DCF（割引キャッシュフロー）</b>：将来のキャッシュフローから逆算した理論株価。<b>前提の置き方で大きく変わる参考値</b>であり、絶対の答えではない。<br>
+        <b>52週レンジ</b>：過去1年の最安値〜最高値の中で、今の株価がどの位置にいるか。
+      </div>
+    </details>
+    <div class="ana-note" id="val-note"></div>
+  </section>
+
+  <!-- 2.6 財務健全性（自動更新） -->
+  <section class="sec">
+    <div class="sec-title">Financial Health <span class="jp">財務健全性</span></div>
+    <div class="health-grid" id="health-grid"></div>
+  </section>
+
+  <!-- 2.7 ウォッチリスト比較（自動更新） -->
+  <section class="sec">
+    <div class="sec-title">Watchlist Comparison <span class="jp">保有×監視銘柄の横並び比較</span></div>
+    <div class="glass" style="padding:10px 8px">
+      <table>
+        <thead><tr>
+          <th>Ticker</th><th>銘柄名</th><th>株価</th><th>52週位置</th>
+          <th>PER</th><th class="adv-only">PBR</th><th class="adv-only">PEG</th>
+          <th>ROE</th><th class="adv-only">D/E</th><th>DCF乖離</th><th>現在地</th>
+        </tr></thead>
+        <tbody id="watch-body"></tbody>
+      </table>
+    </div>
+    <div class="ana-note">DCF乖離＝簡易DCF理論値が現在株価をどれだけ上回る(+)／下回る(−)か。<b>本テーブルは比較用の事実の並列であり、売買推奨ではない。</b></div>
+  </section>
+
+  <!-- 3. NISA枠トラッカー -->
+  <section class="sec">
+    <div class="sec-title">NISA Tracker <span class="jp">新NISA枠の使用状況</span></div>
+    <div class="nisa-grid">
+      <div class="glass bar-card">
+        <div class="bar-head">
+          <span class="name">つみたて投資枠（年間）</span>
+          <span class="nums"><b id="tsumitate-num">—</b> / ¥1,200,000</span>
+        </div>
+        <div class="bar"><div class="fill blue" id="tsumitate-bar" style="width:0%"></div></div>
+        <div class="bar-pct" id="tsumitate-pct">0%</div>
+      </div>
+      <div class="glass bar-card">
+        <div class="bar-head">
+          <span class="name">成長投資枠（年間）</span>
+          <span class="nums"><b id="growth-num">—</b> / ¥2,400,000</span>
+        </div>
+        <div class="bar"><div class="fill purple" id="growth-bar" style="width:0%"></div></div>
+        <div class="bar-pct" id="growth-pct">0%</div>
+      </div>
+      <div class="glass bar-card full">
+        <div class="bar-head">
+          <span class="name">生涯投資枠（累計）</span>
+          <span class="nums"><b id="lifetime-num">—</b> / ¥18,000,000（うち成長枠上限 ¥12,000,000）</span>
+        </div>
+        <div class="bar"><div class="fill" id="lifetime-bar" style="width:0%"></div></div>
+        <div class="bar-pct" id="lifetime-pct">0%</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4・5. グラフ -->
+  <section class="sec">
+    <div class="sec-title">Performance &amp; Allocation <span class="jp">資産推移・配分</span></div>
+    <div class="chart-grid">
+      <div class="glass chart-card">
+        <h3>Total Asset History ｜ 月次資産推移</h3>
+        <div class="chart-box"><canvas id="historyChart"></canvas></div>
+      </div>
+      <div class="glass chart-card">
+        <h3>Asset Allocation ｜ 配分比率</h3>
+        <div class="chart-box"><canvas id="allocChart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. 目標トラッキング -->
+  <section class="sec">
+    <div class="sec-title">Goal Tracking <span class="jp">目標進捗</span></div>
+    <div class="glass goal-card">
+      <div class="goal-top">
+        <span class="t" id="goal-label">TARGET — 未設定</span>
+        <span class="v" id="goal-value">GOAL.amount を設定してください</span>
+      </div>
+      <div class="bar" style="height:14px"><div class="fill" id="goal-bar" style="width:0%"></div></div>
+      <div class="bar-pct" id="goal-pct">—</div>
+    </div>
+  </section>
+
+  <!-- 6. クロの分析レポート -->
+  <section class="sec">
+    <div class="sec-title">Kuro's Analysis <span class="jp">クロの分析レポート</span></div>
+    <div id="reports"></div>
+  </section>
+
+  <!-- 8. 税制・注意事項リファレンス -->
+  <section class="sec">
+    <div class="sec-title">Tax &amp; Rules Reference <span class="jp">税制・注意事項（常時参照用）</span></div>
+    <details class="glass">
+      <summary>新NISA制度の枠</summary>
+      <div class="ref-body">
+        つみたて投資枠 <b>年120万円</b>・成長投資枠 <b>年240万円</b>（年間合計最大360万円）。<br>
+        生涯投資枠は <b>1,800万円</b>（うち成長投資枠の上限は <b>1,200万円</b>）。<br>
+        売却すると翌年に簿価ベースで枠が復活する。NISA口座内の売却益・配当は非課税。
+      </div>
+    </details>
+    <details class="glass">
+      <summary>出国税（国外転出時課税）</summary>
+      <div class="ref-body">
+        <b>金融資産の含み益が1億円を超えている</b>状態で日本の非居住者になると、含み益に対して課税される（未実現でも課税対象）。<br>
+        将来の海外移住（ネバダ州等）を視野に入れる場合、資産規模がこのラインに近づく前に出口戦略を検討すること。
+      </div>
+    </details>
+    <details class="glass">
+      <summary>PFIC（米国税務居住者になった場合のリスク）</summary>
+      <div class="ref-body">
+        アメリカの税務居住者になった場合、<b>日本籍の投資信託はPFIC（受動的外国投資会社）として不利な税制の対象</b>になる。<br>
+        このため本ポートフォリオは日本の投資信託を避け、<b>米国籍ETF・米国個別株を優先</b>する方針とする。
+      </div>
+    </details>
+    <details class="glass">
+      <summary>米国株の配当課税</summary>
+      <div class="ref-body">
+        米国株・米国ETFの配当には<b>米国側で10%の源泉徴収税</b>がかかる（NISA口座でも米国側10%は免除されない）。<br>
+        NISAでは日本側の課税は非課税。値上がり益（キャピタルゲイン）には米国側の源泉徴収はない。
+      </div>
+    </details>
+  </section>
+
+  <footer>Meridian Capital — Private &amp; Confidential</footer>
+</div>
+
+<script>
+/* ============================================================
+   ▼ ここから下は表示ロジック（基本的に触らなくてよい）
+============================================================ */
+const fmtJPY = n => '¥' + Math.round(n).toLocaleString('ja-JP');
+const fmtPct = n => (n>=0?'+':'') + n.toFixed(2) + '%';
+const toJPY = (v,cur) => cur==='USD' ? v*USDJPY : v;
+
+// ---- 集計 ----
+const rows = HOLDINGS.map(h=>{
+  const value = toJPY(h.qty*h.currentPrice, h.currency);
+  const cost  = toJPY(h.qty*h.avgCost, h.currency);
+  return {...h, value, cost, pl:value-cost, plPct: cost>0 ? (value-cost)/cost*100 : 0};
+});
+const totalValue = rows.reduce((s,r)=>s+r.value,0);
+const totalCost  = rows.reduce((s,r)=>s+r.cost,0);
+const totalAssets = totalValue + CASH_JPY;
+const totalPL = totalValue - totalCost;
+const totalPLPct = totalCost>0 ? totalPL/totalCost*100 : 0;
+const plClass = v => v>0?'pos':(v<0?'neg':'flat');
+
+// ---- ヘッダー日付 ----
+document.getElementById('asof-date').textContent =
+  new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+// ---- KPI ----
+document.getElementById('kpi-total').textContent = fmtJPY(totalAssets);
+const plEl = document.getElementById('kpi-pl');
+plEl.textContent = (totalPL<0?'−':'+') + '¥' + Math.abs(Math.round(totalPL)).toLocaleString('ja-JP');
+plEl.className = 'value ' + plClass(totalPL);
+const plPctEl = document.getElementById('kpi-pl-pct');
+plPctEl.textContent = totalCost>0 ? fmtPct(totalPLPct)+'（対元本）' : '— 投資開始前';
+plPctEl.className = 'delta ' + plClass(totalPL);
+document.getElementById('kpi-cost').textContent = fmtJPY(totalCost);
+document.getElementById('kpi-count').textContent = rows.filter(r=>r.qty>0).length + ' 銘柄保有中';
+
+// ---- 配分（カテゴリ別 + 現金）----
+const allocMap = {'現金': CASH_JPY};
+rows.forEach(r=>{ if(r.value>0) allocMap[r.category]=(allocMap[r.category]||0)+r.value; });
+const allocEntries = Object.entries(allocMap).filter(([,v])=>v>0);
+const allocMini = document.getElementById('kpi-alloc');
+if(totalAssets>0){
+  allocMini.innerHTML = allocEntries.map(([k,v])=>
+    `<div class="row"><span>${k}</span><span>${(v/totalAssets*100).toFixed(1)}%</span></div>`).join('');
+}else{
+  allocMini.innerHTML = '<div class="row"><span>データなし</span><span>—</span></div>';
+}
+
+// ---- 保有テーブル ----
+const tbody = document.getElementById('holdings-body');
+const active = rows; // 0株の銘柄も雛形として表示
+if(active.length===0){
+  tbody.innerHTML = '<tr><td colspan="8" class="empty-note">保有銘柄なし — HOLDINGS 配列に追加してください</td></tr>';
+}else{
+  tbody.innerHTML = active.map(r=>{
+    const unit = r.currency==='USD' ? '$' : '¥';
+    return `<tr>
+      <td><span class="ticker">${r.ticker}</span></td>
+      <td>${r.name}<span class="cat-tag">${r.category}</span></td>
+      <td>${r.qty.toLocaleString()}</td>
+      <td>${unit}${r.avgCost.toLocaleString()}</td>
+      <td>${unit}${r.currentPrice.toLocaleString()}</td>
+      <td>${fmtJPY(r.value)}</td>
+      <td class="${plClass(r.pl)}">${r.pl<0?'−':''}¥${Math.abs(Math.round(r.pl)).toLocaleString()}</td>
+      <td class="${plClass(r.pl)}">${r.cost>0?fmtPct(r.plPct):'—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('holdings-foot').innerHTML =
+    `<tr><td colspan="5" style="text-align:left;color:var(--sub);font-family:var(--sans);font-size:11px;letter-spacing:.15em">USD/JPY = ${USDJPY}</td>
+     <td>${fmtJPY(totalValue)}</td>
+     <td class="${plClass(totalPL)}">${totalPL<0?'−':''}¥${Math.abs(Math.round(totalPL)).toLocaleString()}</td>
+     <td class="${plClass(totalPL)}">${totalCost>0?fmtPct(totalPLPct):'—'}</td></tr>`;
+}
+
+// ---- NISAバー ----
+function setBar(prefix, used, max){
+  const pct = Math.min(used/max*100, 100);
+  document.getElementById(prefix+'-num').textContent = fmtJPY(used);
+  document.getElementById(prefix+'-bar').style.width = pct+'%';
+  document.getElementById(prefix+'-pct').textContent = pct.toFixed(1)+'% 使用';
+}
+setBar('tsumitate', NISA.tsumitateUsed, 1200000);
+setBar('growth',    NISA.growthUsed,    2400000);
+setBar('lifetime',  NISA.lifetimeUsed,  18000000);
+
+// ---- 目標 ----
+if(GOAL.amount>0){
+  const gp = Math.min(totalAssets/GOAL.amount*100,100);
+  document.getElementById('goal-label').textContent = `TARGET ${GOAL.targetYear} — 目標資産`;
+  document.getElementById('goal-value').textContent = fmtJPY(GOAL.amount);
+  document.getElementById('goal-bar').style.width = gp+'%';
+  document.getElementById('goal-pct').textContent =
+    `現在 ${fmtJPY(totalAssets)} ／ 達成率 ${(totalAssets/GOAL.amount*100).toFixed(1)}%`;
+}
+
+// ---- レポート ----
+document.getElementById('reports').innerHTML = REPORTS.map(r=>`
+  <div class="glass report">
+    <div class="r-head"><span class="r-date">${r.date}</span><span class="r-title">${r.title}</span></div>
+    <div class="r-body">${r.body}</div>
+  </div>`).join('');
+
+// ---- Chart.js（オフラインでもページ自体は動くようガード）----
+if(typeof Chart !== 'undefined'){
+  Chart.defaults.color = '#8a93a6';
+  Chart.defaults.font.family = "'Noto Sans JP','Yu Gothic UI',sans-serif";
+  Chart.defaults.font.size = 11;
+
+  // 折れ線：資産推移
+  const hc = document.getElementById('historyChart').getContext('2d');
+  const grad = hc.createLinearGradient(0,0,0,320);
+  grad.addColorStop(0,'rgba(196,151,74,.35)');
+  grad.addColorStop(1,'rgba(196,151,74,0)');
+  new Chart(hc,{
+    type:'line',
+    data:{ labels:HISTORY.map(h=>h.month),
+      datasets:[{ label:'総資産（円）', data:HISTORY.map(h=>h.total),
+        borderColor:'#c4974a', backgroundColor:grad, fill:true, tension:.35,
+        pointBackgroundColor:'#e8c98a', pointBorderColor:'#c4974a', pointRadius:4, borderWidth:2 }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{ callbacks:{ label:c=>fmtJPY(c.parsed.y) } } },
+      scales:{
+        x:{ grid:{color:'rgba(255,255,255,.05)'} },
+        y:{ grid:{color:'rgba(255,255,255,.05)'}, ticks:{callback:v=>'¥'+v.toLocaleString()} } } }
+  });
+
+  // ドーナツ：配分
+  const palette = ['#c4974a','#4da3ff','#8b7cf6','#3ddc97','#ff5c7a','#e8c98a'];
+  const hasAlloc = allocEntries.length>0;
+  new Chart(document.getElementById('allocChart'),{
+    type:'doughnut',
+    data:{ labels: hasAlloc?allocEntries.map(e=>e[0]):['未設定'],
+      datasets:[{ data: hasAlloc?allocEntries.map(e=>e[1]):[1],
+        backgroundColor: hasAlloc?palette:['rgba(255,255,255,.08)'],
+        borderColor:'#0b101c', borderWidth:3, hoverOffset:8 }]},
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{ legend:{position:'bottom',labels:{padding:14,boxWidth:10,boxHeight:10}},
+        tooltip:{ enabled:hasAlloc, callbacks:{ label:c=>`${c.label}: ${fmtJPY(c.parsed)} (${(c.parsed/totalAssets*100).toFixed(1)}%)` } } } }
+  });
+}
+
+// ---- KPIカード tilt（CSS疑似3D）----
+document.querySelectorAll('.tilt').forEach(card=>{
+  card.addEventListener('mousemove',e=>{
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX-r.left)/r.width - .5;
+    const y = (e.clientY-r.top)/r.height - .5;
+    card.style.transform = `rotateY(${x*7}deg) rotateX(${-y*7}deg) translateY(-3px) scale(1.015)`;
+  });
+  card.addEventListener('mouseleave',()=>{ card.style.transform=''; });
+});
+
+/* ============================================================
+   ▼ 自動分析セクション（ANALYSIS は fetch_financials.py が自動生成）
+   方針：事実（数値）と解釈を分けて表示する。断定的な売買推奨は出さない。
+============================================================ */
+(function(){
+  const AN = (typeof ANALYSIS !== 'undefined') ? ANALYSIS : null;
+  const valGrid = document.getElementById('val-grid');
+  const healthGrid = document.getElementById('health-grid');
+  const watchBody = document.getElementById('watch-body');
+
+  // ---- シンプル／アドバンスド切替（記憶はlocalStorage・file://で使えなくても動作）----
+  function setMode(adv){
+    document.body.classList.toggle('mode-adv', adv);
+    document.getElementById('lbl-simple').classList.toggle('on', !adv);
+    document.getElementById('lbl-adv').classList.toggle('on', adv);
+    try{ localStorage.setItem('kiichi-view-mode', adv ? 'adv' : 'simple'); }catch(e){}
+  }
+  document.getElementById('mode-switch').addEventListener('click',
+    ()=> setMode(!document.body.classList.contains('mode-adv')));
+  let saved = 'simple';
+  try{ saved = localStorage.getItem('kiichi-view-mode') || 'simple'; }catch(e){}
+  setMode(saved === 'adv');
+
+  // ---- helpers ----
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fx  = (v,d=1) => (v==null || isNaN(v)) ? '—' : Number(v).toFixed(d);
+  const fB  = v => (v==null) ? '—' : (v>=0?'':'−') + '$' + (Math.abs(v)/1e9).toFixed(1) + 'B';
+  const fPc = (v,d=1) => (v==null || isNaN(v)) ? '—' : (v>=0?'+':'−') + Math.abs(v).toFixed(d) + '%';
+  const zoneCls = l => ({'割安ゾーン':'cheap','妥当水準':'fair','割高ゾーン':'rich'})[l] || 'na';
+  const vtagJp = v => ({cheap:'割安方向',expensive:'割高方向',neutral:'中立'})[v] || v;
+  const SIMPLE_SUM = {
+    '割安ゾーン':'複数の指標が、現在の株価が理論値・過去水準より<b>低め</b>であることを示している。ただし「安いのには理由がある」（バリュートラップ）可能性は指標だけでは判別できない。',
+    '妥当水準':'割安・割高のシグナルが拮抗しており、指標上は概ね<b>妥当な価格帯</b>にある。',
+    '割高ゾーン':'複数の指標が、現在の株価が理論値・過去水準より<b>高め</b>であることを示している。将来の成長期待が価格に織り込まれている状態＝安全域は薄い。',
+    '判定材料不足':'判定に使える指標が不足している（データ欠損）。「分からない」は保留でよい。'
+  };
+
+  // ---- SVGスパークライン ----
+  function spark(series, unit){
+    if(!series || series.length < 2) return '<svg></svg>';
+    const W=180, H=30, vals=series.map(p=>p.v);
+    const lo=Math.min(...vals), hi=Math.max(...vals);
+    const span=(hi-lo)||1;
+    const x=i=> i/(series.length-1)*W;
+    const y=v=> H - (v-lo)/span*(H-6) - 3;
+    const pts=series.map((p,i)=>`${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
+    let zero='';
+    if(lo<0 && hi>0) zero=`<line class="spark-zero" x1="0" x2="${W}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}"/>`;
+    const last=series[series.length-1];
+    const title=series.map(p=>`${p.year}: ${fx(p.v,1)}${unit||''}`).join('\n');
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><title>${title}</title>${zero}
+      <polyline class="spark-line" points="${pts}"/>
+      <circle class="spark-dot" cx="${x(series.length-1).toFixed(1)}" cy="${y(last.v).toFixed(1)}" r="2.5"/></svg>`;
+  }
+
+  function range52(q){
+    if(q.pos52w==null) return '';
+    return `<div class="range52">
+      <div class="r-lbl"><span>52W安値 $${fx(q.yearLow,0)}</span><span>現在地 ${fx(q.pos52w,0)}%</span><span>52W高値 $${fx(q.yearHigh,0)}</span></div>
+      <div class="r-track"><div class="r-dot" style="left:${Math.max(0,Math.min(100,q.pos52w))}%"></div></div>
+    </div>`;
+  }
+
+  const order=[...HOLDINGS.map(h=>h.ticker),...WATCHLIST.map(w=>w.ticker)].filter((t,i,a)=>a.indexOf(t)===i);
+  const hasData = AN && AN.fetchedAt && AN.stocks && Object.keys(AN.stocks).length>0;
+  if(!hasData){
+    const msg='<div class="glass" style="grid-column:1/-1"><div class="empty-note">fetch_financials.py を実行すると、ここに自動分析が表示されます</div></div>';
+    valGrid.innerHTML=msg; healthGrid.innerHTML=msg;
+    watchBody.innerHTML='<tr><td colspan="11" class="empty-note">データ未取得</td></tr>';
+    return;
+  }
+  document.getElementById('val-note').innerHTML =
+    `データ取得: <b>${AN.fetchedAt}</b>（Financial Modeling Prep）・セクターPER基準日: ${AN.sectorPeDate||'—'}。<br>
+     本セクションは<b>事実（数値）とフレームワークに基づく解釈を分けて表示</b>するものであり、断定的な売買推奨は行わない。DCFは前提次第で大きく変わる参考値。`;
+
+  // ---- 1. Valuation Deep-Dive ----
+  valGrid.innerHTML = order.map(t=>{
+    const s=AN.stocks[t];
+    if(!s) return '';
+    const src=`<span class="src-tag ${s.source}">${s.source==='holding'?'保有':'監視'}</span>`;
+    if(s.status!=='ok'){
+      return `<div class="glass val-card">
+        <div class="val-head"><div class="t-line"><span class="ticker">${esc(t)}</span><span>${esc(s.name||'')}</span>${src}</div>
+        <span class="badge na">データ対象外</span></div>
+        <div class="simple-sum">${esc(s.reason||'データ取得不可')}。指数連動ETF等は個別のバリュエーション分析対象外（分散の土台として機能する部分）。</div>
+      </div>`;
+    }
+    const v=s.valuation, z=s.zone;
+    const facts=(z.signals||[]).map(sig=>
+      `<li>${sig.text}<span class="v-tag ${sig.verdict}">${vtagJp(sig.verdict)}</span></li>`).join('');
+    return `<div class="glass val-card">
+      <div class="val-head">
+        <div class="t-line"><span class="ticker">${esc(t)}</span><span>${esc(s.name)}</span>${src}</div>
+        <span class="badge ${zoneCls(z.label)}">${z.label}</span>
+      </div>
+      <div class="val-sub">${esc(s.sector||'')}${s.industry?' ・ '+esc(s.industry):''}${s.beta!=null?' ・ β '+fx(s.beta,2):''}</div>
+      <div class="t-line"><span class="price">$${fx(s.quote.price,2)}<small class="${s.quote.changePct>=0?'pos':'neg'}">${fPc(s.quote.changePct,2)}</small></span></div>
+      ${range52(s.quote)}
+      <div class="simple-sum" style="margin-top:14px">${SIMPLE_SUM[z.label]||''}</div>
+      <div class="adv-only">
+        <ul class="fact-list">${facts||'<li>シグナルなし</li>'}</ul>
+        <table class="metric-table">
+          <tr class="mt-head"><td>指標</td><td>現在(TTM)</td><td>自社5年平均</td><td>セクター平均</td></tr>
+          <tr><td>PER</td><td>${fx(v.perTTM)}</td><td>${fx(v.per5yAvg)}</td><td>${fx(v.perSector)}</td></tr>
+          <tr><td>PBR</td><td>${fx(v.pbrTTM)}</td><td>${fx(v.pbr5yAvg)}</td><td>—</td></tr>
+          <tr><td>PEG</td><td>${fx(v.pegTTM,2)}</td><td colspan="2" style="font-family:var(--sans);font-size:11px;color:var(--sub)">1未満=割安・2超=割高の示唆（Lynch）</td></tr>
+          <tr><td>簡易DCF理論値</td><td>$${fx(v.dcf,0)}</td><td colspan="2" class="${v.dcfGapPct>0?'pos':'neg'}">株価との乖離 ${fPc(v.dcfGapPct,0)}</td></tr>
+          <tr><td>アナリスト目標(参考)</td><td>$${fx(v.targetConsensus,0)}</td><td colspan="2" style="font-family:var(--sans);font-size:11px;color:var(--sub)">レンジ $${fx(v.targetLow,0)}〜$${fx(v.targetHigh,0)}</td></tr>
+          <tr><td>FCF利回り</td><td>${fx(v.fcfYieldPct,2)}%</td><td colspan="2"></td></tr>
+        </table>
+        <div class="ana-note">簡易DCFはFMP算出値（成長率・割引率の前提は非開示）。<b>前提が変われば大きく動く参考値</b>として扱う。</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // ---- 2. Financial Health ----
+  const okStocks=order.map(t=>[t,AN.stocks[t]]).filter(([,s])=>s&&s.status==='ok');
+  if(okStocks.length===0){
+    healthGrid.innerHTML='<div class="glass" style="grid-column:1/-1"><div class="empty-note">財務データを取得できた銘柄がありません</div></div>';
+  }else{
+    healthGrid.innerHTML=okStocks.map(([t,s])=>{
+      const h=s.health;
+      const deLabel = h.debtToEquity==null?'—':(h.debtToEquity<0.5?'低負債':(h.debtToEquity<1.5?'中程度':'高負債'));
+      const fcfLast = h.fcfSeries&&h.fcfSeries.length?h.fcfSeries[h.fcfSeries.length-1].v:null;
+      const roeLast = h.roeTTM!=null?h.roeTTM:(h.roeSeries&&h.roeSeries.length?h.roeSeries[h.roeSeries.length-1].v:null);
+      const simple=[
+        roeLast!=null?`ROE ${fx(roeLast)}%`:null,
+        fcfLast!=null?`FCFは${fcfLast>=0?'プラス圏':'マイナス圏'}`:null,
+        h.debtToEquity!=null?`負債は${deLabel}（D/E ${fx(h.debtToEquity,2)}）`:null
+      ].filter(Boolean).join(' ・ ');
+      const fcfB=(h.fcfSeries||[]).map(p=>({year:p.year,v:p.v/1e9}));
+      return `<div class="glass health-card">
+        <div class="val-head"><div class="t-line"><span class="ticker">${esc(t)}</span><span>${esc(s.name)}</span></div>
+          <span class="badge ${h.debtToEquity!=null&&h.debtToEquity<0.5&&(fcfLast==null||fcfLast>=0)?'cheap':'fair'}">${deLabel}</span></div>
+        <div class="simple-sum">${simple||'データ不足'}</div>
+        <div class="spark-row"><span class="s-name">ROE 5年推移</span>${spark(h.roeSeries,'%')}<span class="s-val">${fx(roeLast)}%</span></div>
+        <div class="spark-row"><span class="s-name">FCF 5年推移</span>${spark(fcfB,'B')}<span class="s-val">${fB(fcfLast)}</span></div>
+        <div class="spark-row adv-only" style="display:none"><span class="s-name">FCFマージン</span>${spark(h.fcfMarginSeries,'%')}<span class="s-val">${fx(h.fcfMarginSeries&&h.fcfMarginSeries.length?h.fcfMarginSeries[h.fcfMarginSeries.length-1].v:null)}%</span></div>
+        <div class="adv-only">
+          <table class="metric-table">
+            <tr><td>D/E（負債÷自己資本）</td><td>${fx(h.debtToEquity,2)}</td></tr>
+            <tr><td>流動比率</td><td>${fx(h.currentRatio,2)}</td></tr>
+            <tr><td>純負債/EBITDA</td><td>${fx(h.netDebtToEBITDA,2)}</td></tr>
+            <tr><td>売上CAGR(5年)</td><td>${fPc(h.revenueCagr5y)}</td></tr>
+            <tr><td>EPS CAGR(5年)</td><td>${fPc(h.epsCagr5y)}</td></tr>
+          </table>
+        </div>
+      </div>`;
+    }).join('');
+    // adv-onlyのspark-rowはflex表示が必要なので、モード切替時に上書き
+    const fixAdvRows=()=>{document.querySelectorAll('.spark-row.adv-only').forEach(el=>{
+      el.style.display=document.body.classList.contains('mode-adv')?'flex':'none';});};
+    document.getElementById('mode-switch').addEventListener('click',fixAdvRows);
+    fixAdvRows();
+  }
+
+  // ---- 3. Watchlist比較テーブル ----
+  watchBody.innerHTML = order.map(t=>{
+    const s=AN.stocks[t];
+    if(!s) return '';
+    const src=`<span class="src-tag ${s.source}">${s.source==='holding'?'保有':'監視'}</span>`;
+    if(s.status!=='ok'){
+      return `<tr><td><span class="ticker">${esc(t)}</span></td><td>${esc(s.name||'')}${src}</td>
+        <td colspan="8" style="text-align:left;color:var(--sub)">${esc(s.reason||'データ取得不可')}</td>
+        <td><span class="badge na">対象外</span></td></tr>`;
+    }
+    const v=s.valuation,h=s.health,q=s.quote;
+    return `<tr>
+      <td><span class="ticker">${esc(t)}</span></td>
+      <td>${esc(s.name)}${src}</td>
+      <td>$${fx(q.price,2)}</td>
+      <td>${fx(q.pos52w,0)}%</td>
+      <td>${fx(v.perTTM)}</td>
+      <td class="adv-only">${fx(v.pbrTTM)}</td>
+      <td class="adv-only">${fx(v.pegTTM,2)}</td>
+      <td>${fx(h.roeTTM)}%</td>
+      <td class="adv-only">${fx(h.debtToEquity,2)}</td>
+      <td class="${v.dcfGapPct>0?'pos':'neg'}">${fPc(v.dcfGapPct,0)}</td>
+      <td><span class="badge ${zoneCls(s.zone.label)}">${s.zone.label}</span></td>
+    </tr>`;
+  }).join('');
+})();
+</script>
+</body>
+</html>

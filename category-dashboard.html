@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — No4.DesignClub</title>
+<script>document.documentElement.classList.add('js');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Noto+Sans+JP:wght@100;300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="mark" href="index.html"><img class="mark-icon" src="assets/brand/no4-mark.png" alt="">No<b>4.</b>DesignClub</a>
+  <a class="back" href="index.html"><span>&#8592;</span> All Categories</a>
+</header>
+
+<nav class="side-nav">
+  <a href="#s-hero" class="dot" data-label="Dashboard"></a>
+  <a href="#s-work-01" class="dot" data-label="01 · Executive"></a>
+  <a href="#s-work-02" class="dot" data-label="02 · Meridian Capital"></a>
+</nav>
+
+<section class="cat-hero" id="s-hero">
+  <div class="wrap">
+    <div class="no reveal">Category — 02</div>
+    <h1 class="serif reveal">Dashboard.</h1>
+    <p class="tag reveal">数字を、リアルタイムで魅せる。売上・KPI・資産をライブで可視化するWebダッシュボード。</p>
+    <div class="count reveal">2 Works</div>
+    <div class="rule reveal"></div>
+  </div>
+</section>
+
+<div class="wrap">
+
+  <!-- 01 CG DASHBOARD -->
+  <section class="work" id="s-work-01">
+    <div class="head reveal">
+      <div class="idx">01</div>
+      <div>
+        <div class="tags"><span class="tag-pill">Dashboard</span><span class="tag-pill gold-tag">Client Work</span></div>
+        <h3 class="serif">Executive Dashboard</h3>
+        <p class="concept">ホストクラブグループの継続案件。売上・KPIをリアルタイムで可視化し、幹部がスマホから即確認できるWebダッシュボード。LPで終わらない付き合い。</p>
+        <ul>
+          <li>グループ / 店舗別売上をリアルタイム集計</li>
+          <li>達成率・KPIを一目で把握</li>
+          <li>スマホから即確認できるWeb運用</li>
+          <li>数値更新は即時反映</li>
+          <li class="note">デモ表示（数値・店舗名は架空のサンプルデータ）</li>
+        </ul>
+        <a class="live-link" href="demo/lume-group-dashboard.html" target="_blank" rel="noopener">実際に操作してみる <span>&#8599;</span></a>
+      </div>
+    </div>
+    <div class="reveal">
+      <div class="stage">
+        <div class="browser grow">
+          <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url"><b>lume-group</b> / dashboard</span></div>
+          <div class="viewport fit"><img src="assets/cg-dashboard/overview.png" alt="Executive Dashboard 幹部ダッシュボード 集計ビュー" loading="lazy"></div>
+        </div>
+      </div>
+      <div class="cap-row"><span>Live KPI · Aggregated view</span><span class="dotline"></span><span>Real-time</span></div>
+    </div>
+  </section>
+
+  <!-- 02 MERIDIAN CAPITAL -->
+  <section class="work" id="s-work-02">
+    <div class="head reveal">
+      <div class="idx">02</div>
+      <div>
+        <div class="tags"><span class="tag-pill">Dashboard</span><span class="tag-pill muted">Personal Project</span></div>
+        <h3 class="serif">MERIDIAN CAPITAL</h3>
+        <p class="concept">外部金融API連携のプライベート・ウェルス分析UI。機関投資家級のバリュエーション分析を、ダーク×ゴールドの静かな高級感で。</p>
+        <ul>
+          <li>外部金融APIとのリアルタイム連携</li>
+          <li>機関投資家級のバリュエーション分析</li>
+          <li>ダーク×ゴールドのデータ可視化</li>
+          <li class="note">デモ表示（保有銘柄・資産額は架空のサンプルデータ、株価分析部分は実データ）</li>
+        </ul>
+        <a class="live-link" href="demo/meridian-capital-dashboard.html" target="_blank" rel="noopener">実際に操作してみる <span>&#8599;</span></a>
+      </div>
+    </div>
+    <div class="reveal">
+      <div class="stage">
+        <div class="browser grow">
+          <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url"><b>meridian</b> / capital</span></div>
+          <div class="viewport" style="--vh:640px"><img src="assets/capital/overview.png" alt="MERIDIAN CAPITAL ダッシュボード" loading="lazy"></div>
+        </div>
+      </div>
+      <div class="cap-row"><span>Private Wealth Dashboard</span><span class="dotline"></span><span>Data-driven UI</span></div>
+    </div>
+  </section>
+
+</div>
+
+<section class="back-band">
+  <a class="to-hub" href="index.html">&#8592; Back to All Categories</a>
+</section>
+
+<script src="common.js"></script>
+</body>
+</html>

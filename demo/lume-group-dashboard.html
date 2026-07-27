@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUME GROUP — EXECUTIVE DASHBOARD</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Sans+JP:wght@100;300;400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:#171717;
+  background-image:radial-gradient(ellipse at 15% 0%,#1f1a11 0%,transparent 55%),
+                   radial-gradient(ellipse at 85% 100%,#11191a 0%,transparent 55%);
+  color:#e8e8e8;font-family:'Noto Sans JP',sans-serif;font-weight:300;min-height:100vh;
+}
+
+.site-header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(16,16,16,0.94);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid #252525;
+  box-shadow:0 1px 0 rgba(196,151,74,0.1),0 6px 28px rgba(0,0,0,0.5);
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 32px;
+}
+.logo{font-family:'EB Garamond',serif;font-size:24px;color:#c4974a;letter-spacing:.18em;text-shadow:0 0 32px rgba(196,151,74,0.25);}
+.logo-sub{font-size:9px;color:#666;letter-spacing:.28em;margin-top:3px;text-transform:uppercase;}
+
+.month-nav{display:flex;gap:8px;align-items:center;}
+.nav-btn{
+  background:rgba(255,255,255,0.04);border:1px solid #2e2e2e;color:#888;
+  width:32px;height:32px;border-radius:6px;cursor:pointer;font-size:16px;
+  transition:all .2s;display:flex;align-items:center;justify-content:center;
+}
+.nav-btn:hover{background:#c4974a;border-color:#c4974a;color:#111;box-shadow:0 0 18px rgba(196,151,74,0.35);}
+.nav-btn:disabled{opacity:.25;pointer-events:none;}
+.month-label{font-family:'EB Garamond',serif;font-size:17px;min-width:90px;text-align:center;color:#c4974a;letter-spacing:.08em;}
+
+.tab-nav{
+  background:rgba(18,18,18,0.8);backdrop-filter:blur(8px);
+  border-bottom:1px solid #222;display:flex;padding:0 32px;
+}
+.tab-btn{
+  padding:14px 22px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:#999;cursor:pointer;border-bottom:2px solid transparent;
+  transition:all .2s;font-weight:300;
+}
+.tab-btn:hover{color:#888;transform:translateY(-1px);}
+.tab-btn{transition:all .2s,transform .2s ease;}
+.tab-btn.active{
+  color:#c4974a;border-bottom-color:#c4974a;
+  text-shadow:0 1px 0 rgba(0,0,0,0.6),0 0 16px rgba(196,151,74,0.3);
+  background:linear-gradient(180deg,rgba(196,151,74,0.07),transparent);
+  box-shadow:inset 0 1px 0 rgba(196,151,74,0.12);
+  border-radius:6px 6px 0 0;
+}
+
+.tab-content{display:none;padding:28px 32px;}
+.tab-content.active{display:block;animation:fadeUp .3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+.kpi-row{display:grid;gap:10px;margin-bottom:16px;perspective:900px;}
+.kpi-r5{grid-template-columns:repeat(5,1fr);}
+.kpi-r4{grid-template-columns:repeat(4,1fr);}
+.kpi-r6{grid-template-columns:repeat(6,1fr);}
+.kpi{
+  background:linear-gradient(150deg,#232323,#1d1d1d);
+  border:1px solid #282828;border-top:1px solid rgba(196,151,74,0.2);
+  border-radius:8px;padding:16px 18px;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.4),
+    0 4px 10px rgba(0,0,0,0.35),
+    0 12px 28px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+  transition:transform .28s cubic-bezier(.22,.68,.35,1),box-shadow .28s ease;
+  position:relative;overflow:hidden;
+  transform-style:preserve-3d;will-change:transform;
+}
+.kpi::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(196,151,74,0.3),transparent);
+}
+.kpi::before{
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:radial-gradient(120% 90% at 50% -10%,rgba(196,151,74,0.12),transparent 60%);
+  transition:opacity .28s ease;
+}
+.kpi:hover{
+  transform:translateY(-5px) rotateX(4deg) scale(1.015);
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.45),
+    0 10px 22px rgba(0,0,0,0.45),
+    0 26px 52px rgba(0,0,0,0.4),
+    0 0 0 1px rgba(196,151,74,0.22),
+    0 0 26px rgba(196,151,74,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.kpi:hover::before{opacity:1;}
+.kpi:hover .kpi-value{transform:translateY(-1px) scale(1.045);}
+.kpi-label{font-size:9px;color:#999;letter-spacing:.13em;text-transform:uppercase;margin-bottom:8px;}
+.kpi-value{
+  font-family:'EB Garamond',serif;font-size:28px;color:#c4974a;line-height:1.1;
+  display:inline-block;transition:transform .28s cubic-bezier(.22,.68,.35,1);
+  text-shadow:0 1px 0 rgba(0,0,0,0.55),0 2px 3px rgba(0,0,0,0.4),0 0 22px rgba(196,151,74,0.18);
+}
+.kpi-unit{font-size:12px;color:#666;margin-left:3px;}
+.kpi-change{font-size:10px;margin-top:5px;min-height:14px;}
+.up{color:#6db86d;} .down{color:#c76b6b;} .flat{color:#999;}
+.kpi-value.good{color:#6db86d;}
+
+.g2{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.g2h{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.card{
+  background:linear-gradient(155deg,#212121,#1c1c1c);
+  border:1px solid #272727;border-radius:10px;padding:22px;margin-bottom:14px;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.45),
+    0 6px 16px rgba(0,0,0,0.38),
+    0 18px 40px rgba(0,0,0,0.32),
+    inset 0 1px 0 rgba(255,255,255,0.035);
+  transition:transform .3s cubic-bezier(.22,.68,.35,1),box-shadow .3s ease;
+}
+.card:hover{
+  transform:translateY(-3px);
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.5),
+    0 12px 26px rgba(0,0,0,0.45),
+    0 30px 60px rgba(0,0,0,0.38),
+    0 0 0 1px rgba(196,151,74,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.card-title{
+  font-size:9px;color:#999;letter-spacing:.16em;text-transform:uppercase;margin-bottom:18px;
+  display:flex;align-items:center;gap:10px;
+}
+.card-title::before{content:'';display:inline-block;width:14px;height:1px;background:rgba(196,151,74,0.5);}
+.chart-wrap{position:relative;}
+
+.dtable{width:100%;border-collapse:collapse;font-size:12px;}
+.dtable th{
+  font-size:9px;color:#aaa;letter-spacing:.09em;text-transform:uppercase;
+  padding:8px 12px;border-bottom:1px solid #222;font-weight:300;text-align:right;
+}
+.dtable th:first-child{text-align:left;}
+.dtable td{padding:10px 12px;border-bottom:1px solid #202020;text-align:right;color:#bbb;vertical-align:middle;}
+.dtable td:first-child{text-align:left;color:#c4974a;}
+.dtable tr:last-child td{border-bottom:none;}
+.dtable tbody tr{transition:background .2s,box-shadow .2s;}
+.dtable tbody tr:hover td{
+  background:rgba(196,151,74,0.045);
+  box-shadow:inset 0 1px 0 rgba(196,151,74,0.08),inset 0 -1px 0 rgba(0,0,0,0.3);
+}
+#groupRankTable tbody tr:nth-child(-n+3) td{
+  background:linear-gradient(180deg,rgba(196,151,74,0.055),rgba(196,151,74,0.02));
+  box-shadow:inset 0 1px 0 rgba(196,151,74,0.1),inset 0 -1px 0 rgba(0,0,0,0.35);
+}
+#groupRankTable tbody tr:first-child td:first-child{
+  text-shadow:0 1px 0 rgba(0,0,0,0.6),0 0 14px rgba(196,151,74,0.45);
+  font-size:18px;
+}
+.total-row td{color:#e8e8e8;border-top:1px solid #2a2a2a;font-weight:400;padding-top:12px;}
+
+.ach-bar-bg{background:#1a1a1a;border-radius:3px;height:3px;margin-top:8px;overflow:hidden;}
+.ach-bar{height:3px;border-radius:3px;transition:width .9s cubic-bezier(.4,0,.2,1);}
+.ach-over{background:linear-gradient(90deg,#3d8f3d,#6db86d);}
+.ach-mid{background:linear-gradient(90deg,#a07628,#c4974a);}
+.ach-low{background:linear-gradient(90deg,#a03c3c,#c76b6b);}
+
+.badge{display:inline-block;font-size:9px;padding:2px 7px;border-radius:4px;letter-spacing:.04em;vertical-align:middle;margin-left:6px;}
+.badge-new{background:rgba(196,151,74,0.1);color:#c4974a;border:1px solid rgba(196,151,74,0.25);}
+.badge-exit{background:rgba(199,107,107,0.1);color:#c76b6b;border:1px solid rgba(199,107,107,0.25);}
+.badge-move{background:rgba(122,173,170,0.1);color:#7aadaa;border:1px solid rgba(122,173,170,0.25);}
+
+.fin-row{display:flex;justify-content:space-between;align-items:baseline;padding:13px 0;border-bottom:1px solid #1e1e1e;}
+.fin-row:last-child{border-bottom:none;}
+.fin-label{font-size:11px;color:#ccc;}
+.fin-val{font-family:'EB Garamond',serif;font-size:20px;color:#e0e0e0;text-shadow:0 1px 0 rgba(0,0,0,0.5),0 2px 4px rgba(0,0,0,0.3);}
+.fin-unit{font-size:11px;color:#aaa;margin-left:3px;}
+
+.tl-item{display:flex;gap:20px;padding:18px 0;border-bottom:1px solid #1e1e1e;}
+.tl-item:last-child{border-bottom:none;}
+.tl-date{min-width:80px;font-family:'EB Garamond',serif;font-size:16px;color:#c4974a;flex-shrink:0;letter-spacing:.06em;}
+.tl-dot{
+  width:10px;height:10px;border-radius:50%;
+  background:#c4974a;margin-top:5px;flex-shrink:0;
+  box-shadow:0 0 0 3px rgba(196,151,74,0.15),0 0 14px rgba(196,151,74,0.35);
+}
+.tl-title{font-size:14px;color:#ddd;margin-bottom:5px;}
+.tl-sub{font-size:11px;color:#bbb;line-height:1.65;}
+
+.tgt-table{width:100%;border-collapse:collapse;}
+.tgt-table th{font-size:9px;color:#aaa;letter-spacing:.09em;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid #222;font-weight:300;text-align:right;}
+.tgt-table th:first-child{text-align:left;}
+.tgt-table td{padding:11px 12px;border-bottom:1px solid #202020;font-size:13px;color:#ccc;text-align:right;}
+.tgt-table td:first-child{text-align:left;color:#c4974a;}
+.tgt-table tr.hl td{background:rgba(196,151,74,0.04);}
+.tgt-table tr.tot td{color:#e0e0e0;border-top:1px solid #2a2a2a;font-weight:400;}
+
+.intel-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.rep-g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+#splash{position:fixed;inset:0;z-index:999;background:#171717;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;animation:splashOut .45s ease .8s forwards;}
+.splash-logo{font-family:'EB Garamond',serif;font-size:30px;color:#c4974a;letter-spacing:.22em;text-shadow:0 0 40px rgba(196,151,74,0.35);animation:splashIn .55s ease both;}
+.splash-sub{font-size:9px;color:#666;letter-spacing:.34em;margin-top:10px;text-transform:uppercase;animation:splashIn .55s ease .12s both;}
+@keyframes splashIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes splashOut{to{opacity:0;visibility:hidden;}}
+
+@media(hover:none){
+  .kpi:hover{transform:none;}
+  .kpi:hover .kpi-value{transform:none;}
+  .card:hover{transform:none;}
+  .tab-btn:hover{transform:none;}
+}
+@media(prefers-reduced-motion:reduce){
+  .kpi,.card,.kpi-value,.tab-btn{transition:none;}
+  .kpi:hover,.card:hover{transform:none;}
+}
+@media(max-width:768px){
+  .kpi-r4,.kpi-r5,.kpi-r6{grid-template-columns:repeat(2,1fr);}
+  .g2,.g3,.g2h{grid-template-columns:1fr;}
+  .intel-grid{grid-template-columns:1fr;}
+  .rep-g2{grid-template-columns:1fr;}
+  .tab-content{padding:16px;}
+  .site-header{padding:12px 16px;}
+  .tab-nav{padding:0 12px;overflow-x:auto;}
+  .tab-btn{padding:10px 14px;font-size:10px;}
+  .card{padding:16px;}
+  .dtable th,.dtable td{padding:8px 7px;}
+}
+</style>
+</head>
+<body>
+
+<div id="splash"><div class="splash-logo">LUME GROUP</div><div class="splash-sub">Executive Intelligence</div></div>
+
+<div class="site-header">
+  <div>
+    <div class="logo">LUME GROUP</div>
+    <div class="logo-sub">Executive Intelligence Dashboard</div>
+  </div>
+  <div id="monthNav" class="month-nav">
+    <button class="nav-btn" id="navPrev" onclick="navigate(-1)">&#8249;</button>
+    <div class="month-label" id="monthLabel"></div>
+    <button class="nav-btn" id="navNext" onclick="navigate(1)">&#8250;</button>
+  </div>
+</div>
+
+<div class="tab-nav">
+  <div class="tab-btn active" onclick="switchTab('group',this)">GROUP</div>
+  <div class="tab-btn" onclick="switchTab('create',this)">LUME</div>
+  <div class="tab-btn" onclick="switchTab('plus',this)">PLUS</div>
+  <div class="tab-btn" onclick="switchTab('roadmap',this)">ROADMAP</div>
+  <div class="tab-btn" onclick="switchTab('report',this)">REPORT</div>
+</div>
+
+<!-- ========== GROUP ========== -->
+<div id="tab-group" class="tab-content active">
+  <div id="intelSection"></div>
+  <div class="kpi-row kpi-r5" id="groupKpi"></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">グループ月別売上推移（万円）</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="gTrendChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">今月 店舗別シェア</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="gShareChart"></canvas></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">総卓数・スタッフ数推移</div>
+    <div class="chart-wrap" style="height:220px"><canvas id="gVolChart"></canvas></div>
+  </div>
+  <div class="g2h">
+    <div class="card">
+      <div class="card-title">LUME — 達成状況</div>
+      <div id="createAch"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">LUME PLUS — 達成状況</div>
+      <div id="plusAch"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">店舗比較サマリー</div>
+    <table class="dtable" id="groupCmpTable"></table>
+  </div>
+  <div class="card">
+    <div class="card-title">GROUP 個人売上ランキング — 当月</div>
+    <table class="dtable" id="groupRankTable"></table>
+  </div>
+  <div class="card">
+    <div class="card-title">GROUP 個人総卓数ランキング — 当月</div>
+    <table class="dtable" id="groupVolRankTable"></table>
+  </div>
+</div>
+
+<!-- ========== LUME ========== -->
+<div id="tab-create" class="tab-content">
+  <div class="kpi-row kpi-r4" id="createKpi"></div>
+  <div class="card">
+    <div class="card-title">LUME本店 — 14ヶ月売上推移（万円）</div>
+    <div class="chart-wrap" style="height:200px"><canvas id="cTrendChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">総卓数・スタッフ数推移</div>
+    <div class="chart-wrap" style="height:200px"><canvas id="cVolChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">個人別売上（万円）— 当月降順</div>
+    <table class="dtable" id="cIndivTable"></table>
+  </div>
+  <div class="card">
+    <div class="card-title">個人総卓数ランキング — 当月</div>
+    <table class="dtable" id="cVolRankTable"></table>
+  </div>
+</div>
+
+<!-- ========== PLUS ========== -->
+<div id="tab-plus" class="tab-content">
+  <div class="kpi-row kpi-r6" id="plusKpi"></div>
+  <div class="card">
+    <div class="card-title">LUME PLUS — 月別推移（万円）</div>
+    <div class="chart-wrap" style="height:190px"><canvas id="pTrendChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">総卓数・スタッフ数推移</div>
+    <div class="chart-wrap" style="height:190px"><canvas id="pVolChart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-title">個人別売上（万円）— 当月降順</div>
+    <table class="dtable" id="pIndivTable"></table>
+  </div>
+  <div class="card">
+    <div class="card-title">個人総卓数ランキング — 当月</div>
+    <table class="dtable" id="pVolRankTable"></table>
+  </div>
+</div>
+
+<!-- ========== REPORT ========== -->
+<div id="tab-report" class="tab-content">
+  <div id="reportEventCard"></div>
+  <div class="g2h" id="reportStoreCards"></div>
+</div>
+
+<!-- ========== ROADMAP ========== -->
+<div id="tab-roadmap" class="tab-content">
+  <div class="g2h">
+    <div class="card">
+      <div class="card-title">財務スナップショット</div>
+      <div class="fin-row"><span class="fin-label">買収残債合計</span><span class="fin-val">4,850<span class="fin-unit">万円</span></span></div>
+      <div class="fin-row"><span class="fin-label">月次返済額</span><span class="fin-val">620<span class="fin-unit">万円</span></span></div>
+      <div class="fin-row"><span class="fin-label" id="finSalesLabel">最新月グループ売上</span><span class="fin-val" id="finSalesVal">—</span></div>
+      <div class="fin-row"><span class="fin-label">年間換算ペース</span><span class="fin-val" id="finAnnualVal">—</span></div>
+      <div class="fin-row"><span class="fin-label">12億達成目標</span><span class="fin-val" style="color:#6db86d">2027年</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">直近必要資金</div>
+      <div class="fin-row"><span class="fin-label">LUMEPlus拡大移転</span><span class="fin-val">4,200<span class="fin-unit">万円</span></span></div>
+      <div class="fin-row"><span class="fin-label">現箱名義変更</span><span class="fin-val">380<span class="fin-unit">万円</span></span></div>
+      <div class="fin-row"><span class="fin-label">4月契約・名義変更</span><span class="fin-val">1,650<span class="fin-unit">万円</span></span></div>
+      <div class="fin-row"><span class="fin-label">内装費（5月）</span><span class="fin-val">2,600<span class="fin-unit">万円</span></span></div>
+      <div class="fin-row"><span class="fin-label">合計</span><span class="fin-val" style="color:#c76b6b">8,830<span class="fin-unit">万円</span></span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">2027 ROADMAP</div>
+    <div class="tl-item">
+      <div class="tl-date">2027.06</div><div class="tl-dot"></div>
+      <div><div class="tl-title">LUME PLUS — 拡大移転</div><div class="tl-sub">月商目標 3,800万 / 現箱をMUSEに転用</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-date">2027.08</div><div class="tl-dot"></div>
+      <div><div class="tl-title">LUME MUSE — オープン</div><div class="tl-sub">大人のホスト / LUME・PLUSベテラン集結 / 月商目標 2,400万（8〜12月）</div></div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-date">2027.10</div><div class="tl-dot"></div>
+      <div><div class="tl-title">LUME 本店 — 改装</div><div class="tl-sub">月商3,800万維持しながらリニューアル</div></div>
+    </div>
+  </div>
+  <div class="g2h">
+    <div class="card">
+      <div class="card-title">2027年 月商目標</div>
+      <table class="tgt-table">
+        <thead><tr><th style="text-align:left">店舗</th><th>月商</th><th>年換算</th></tr></thead>
+        <tbody>
+          <tr><td>LUME</td><td>3,800万</td><td>4.6億</td></tr>
+          <tr><td>LUME PLUS</td><td>3,800万</td><td>4.6億</td></tr>
+          <tr class="hl"><td>LUME MUSE</td><td>2,400万</td><td>1.2億<span style="font-size:10px;color:#fff">（5ヶ月）</span></td></tr>
+          <tr><td>SOLEIL</td><td>260万</td><td>0.31億</td></tr>
+          <tr class="tot"><td>GROUP TOTAL</td><td>10,260万</td><td>≈12億</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">NEXT STAGE — エリア展開</div>
+      <table class="tgt-table">
+        <thead><tr><th style="text-align:left">出店地</th><th>月商圏</th></tr></thead>
+        <tbody>
+          <tr><td>LUME EAST BRANCH</td><td>1,900万</td></tr>
+          <tr><td>LUME SOUTH BRANCH</td><td>1,900万</td></tr>
+          <tr><td>LUME WEST BRANCH</td><td>1,500万</td></tr>
+          <tr class="tot"><td>2店舗稼働で月商1.2億</td><td>エリア No.1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const MONTHLY = {
+  '2026-03': {
+    LUME: { target:40328990, sales:37607831, achRate:60,  newC:122, repeatC:40,  formalV:386, totalV:660 },
+    PLUS:   { target:31012738, sales:36460179, achRate:82,  newC:106, repeatRate:12.6, avgSpend:75169, uncRate:6.3, totalV:350 },
+  },
+  '2026-04': {
+    LUME: { target:42858398, sales:33687985, achRate:61,  newC:146, repeatC:33,  formalV:541, totalV:554 },
+    PLUS:   { target:29836544, sales:36590228, achRate:78,  newC:96,  repeatRate:23.2, avgSpend:72718, uncRate:7.2, totalV:382 },
+  },
+  '2026-05': {
+    LUME: { target:42674347, sales:55571612, achRate:75,  newC:74,  repeatC:34,  formalV:375, totalV:630 },
+    PLUS:   { target:34235334, sales:51813146, achRate:97, newC:87,  repeatRate:34.6, avgSpend:80964, uncRate:2.6, totalV:584 },
+  },
+  '2026-06': {
+    LUME: { target:35543981, sales:41861487, achRate:97,  newC:87,  repeatC:29,  formalV:473, totalV:605 },
+    PLUS:   { target:36361536, sales:41057068, achRate:88, newC:61,  repeatRate:38.0, avgSpend:107724, uncRate:6.7, totalV:565 },
+  },
+};
+
+const LUME_TREND = [
+  {m:'R7/5', s:31235085},{m:'R7/6', s:30196541},{m:'R7/7', s:24059506},
+  {m:'R7/8', s:44785323},{m:'R7/9', s:38186873},{m:'R7/10',s:23901492},
+  {m:'R7/11',s:29834554},{m:'R7/12',s:32054497},{m:'R8/1', s:47946920},
+  {m:'R8/2', s:41066640},{m:'R8/3', s:67477021},{m:'R8/4', s:35985643},
+  {m:'R8/5', s:49979082},
+  {m:'R8/6', s:52342872},
+];
+
+const LUME_TEAMS = {
+  '2026-03': [{n:'TOPチーム',s:8491794,r:86},{n:'LUMEチーム',s:12755172,r:58},{n:'新勢力チーム',s:12533202,r:102}],
+  '2026-04': [{n:'TOPチーム',s:10139472,r:78},{n:'LUMEチーム',s:11475657,r:77},{n:'新勢力チーム',s:6336222,r:48}],
+  '2026-05': [{n:'TOPチーム',s:8929436,r:73},{n:'LUMEチーム',s:20753562,r:104},{n:'新勢力チーム',s:12869424,r:93}],
+};
+
+const LUME_INDIV = [
+  {n:'REI',       m3:316, m4:66,  m5:101, m6:32,  t3:26,  t4:29,  t5:24,  t6:4,   tag3:'新入'},
+  {n:'AXEL',    m3:107,  m4:78, m5:528, m6:85,  t3:44,  t4:45,  t5:37,  t6:33,  tag3:'新入'},
+  {n:'SHUN',     m3:277, m4:220, m5:169, m6:171, t3:84,  t4:91,  t5:49,  t6:56},
+  {n:'迅',      m3:208, m4:119, m5:175, m6:223, t3:47,  t4:27,  t5:23,  t6:19},
+  {n:'ハヤテ',    m3:56,  m4:119,  m5:268, m6:203, t3:17,  t4:22,  t5:27,  t6:54,  tag3:'新入'},
+  {n:'ジン',      m3:130,  m4:117,  m5:186, m6:252, t3:49,  t4:50,  t5:63,  t6:43,  tag3:'新入'},
+  {n:'カケル',      m3:290, m4:176, m5:126, m6:237, t3:71,  t4:39,  t5:38,  t6:47},
+  {n:'リョウ',        m3:177, m4:225, m5:160, m6:140, t3:57,  t4:61,  t5:58,  t6:48},
+  {n:'ナツ',      m3:173, m4:142, m5:76, m6:143, t3:39,  t4:53,  t5:48,  t6:42},
+  {n:'LUI',       m3:80, m4:102,  m5:83,  m6:313, t3:17,  t4:28,  t5:33,  t6:24},
+  {n:'ツバキ',        m3:5,   m4:22,  m5:125,  m6:69,  t3:11,  t4:9,  t5:28,  t6:23},
+  {n:'ジンバ', m3:81,  m4:122,  m5:83,  m6:189, t3:14,  t4:13,  t5:9,  t6:15,  tag3:'新入'},
+  {n:'ゴロー',  m3:57,  m4:57,  m5:48,  m6:46,  t3:21,  t4:28,  t5:22,  t6:29,  mgmt:true},
+  {n:'ハル',      m3:48,  m4:89,  m5:69,  m6:129,  t3:17,  t4:10,  t5:16,  t6:12},
+  {n:'リン',      m3:0,   m4:9,   m5:19,  m6:9,   t3:0,   t4:0,   t5:8,   t6:3},
+  {n:'トラ',      m3:28,  m4:2,   m5:0,   m6:10,   t3:11,  t4:9,  t5:2,   t6:3},
+  {n:'ゼン',       m3:3,   m4:6,   m5:4,   m6:19,  t3:4,   t4:3,   t5:3,   t6:9},
+  {n:'トワ',      m3:1,   m4:1,   m5:4,   m6:65,  t3:2,   t4:2,   t5:3,   t6:14,  tag3:'新入'},
+  {n:'セイラ',    m3:3,   m4:17,  m5:25,  m6:24,  t3:4,   t4:5,   t5:36,  t6:24},
+  {n:'レン',      m3:0,   m4:0,   m5:8,   m6:8,   t3:null,t4:null,t5:1,   t6:2,   mgmt:true},
+  {n:'タクミ',     m3:null,m4:null,m5:null,m6:0,   t3:null,t4:null,t5:null,t6:0,   tag6:'新入'},
+  {n:'ハルジ',      m3:0,   m4:0,   m5:0,   m6:0,   t3:1,   t4:1,   t5:0,   t6:0,   mgmt:true},
+  {n:'キラ',    m3:0,   m4:0,   m5:1,   m6:0,   t3:null,t4:null,t5:3,   t6:0},
+  {n:'ダイ',      m3:7,   m4:2,   m5:8,   m6:0,   t3:4,   t4:5,   t5:4,   t6:0,   mgmt:true},
+  {n:'ミズキ',    m3:0,   m4:0,   m5:3,   m6:0,   t3:null,t4:null,t5:null,t6:null},
+  {n:'スイ',        m3:0,   m4:0,   m5:0,   m6:0,   t3:null,t4:null,t5:0,   t6:0,   tag6:'退店'},
+];
+
+const PLUS_INDIV = [
+  {n:'ハルト', m3:423, m4:377, m5:1198, m6:704, t3:73,  t4:70,  t5:43,  t6:43},
+  {n:'リク',     m3:395, m4:263, m5:314, m6:601, t3:52,  t4:55,  t5:42,  t6:48},
+  {n:'カイリ',     m3:174, m4:161, m5:164, m6:175, t3:56,  t4:70,  t5:70,  t6:71},
+  {n:'ヒナ',   m3:115, m4:298, m5:178, m6:226, t3:38,  t4:88,  t5:56,  t6:66},
+  {n:'マサト',   m3:147, m4:104, m5:106, m6:83, t3:29,  t4:41,  t5:28,  t6:32},
+  {n:'ミライ', m3:129,  m4:122,  m5:249, m6:200, t3:30,  t4:57,  t5:51,  t6:31},
+  {n:'ケイタ',     m3:118,  m4:108,  m5:55,  m6:127,  t3:30,  t4:30,  t5:31,  t6:24},
+  {n:'ノア',     m3:27,  m4:36,  m5:30,  m6:72,  t3:17,  t4:24,  t5:32,  t6:26},
+  {n:'ルカ',   m3:0,   m4:10,  m5:20,  m6:22,  t3:null,t4:11,   t5:16,  t6:12,  tag3:'研修'},
+  {n:'レイム',     m3:3,   m4:13,  m5:17,  m6:17,  t3:6,   t4:19,  t5:14,  t6:7},
+  {n:'ツクル',   m3:2,   m4:4,   m5:14,   m6:0,   t3:5,   t4:10,  t5:11,  t6:0,   tag6:'退店'},
+  {n:'ユウト',     m3:0,   m4:0,   m5:8,   m6:43,  t3:null,t4:0,   t5:14,  t6:11,  tag4:'新入'},
+  {n:'コハル',       m3:null,m4:null,m5:9,   m6:144, t3:null,t4:null,t5:9,   t6:9,  tag5:'新入'},
+  {n:'タイセイ',     m3:null,m4:null,m5:0,   m6:47,  t3:null,t4:null,t5:0,   t6:24,  tag6:'退店'},
+  {n:'モモ',       m3:0,   m4:9,   m5:0,   m6:6,   t3:0,   t4:2,   t5:0,   t6:5},
+  {n:'ウィル',     m3:3,   m4:10,   m5:3,   m6:1,   t3:3,   t4:5,   t5:7,   t6:3,   tag6:'退店'},
+  {n:'ソウ',     m3:1,   m4:0,   m5:0,   m6:0,   t3:2,   t4:0,   t5:0,   t6:0},
+  {n:'メイ',       m3:0,   m4:0,   m5:0,   m6:0,   t3:0,   t4:0,   t5:0,   t6:0,   mgmt:true},
+  {n:'ラン',     m3:0,   m4:0,   m5:0,   m6:0,   t3:0,   t4:0,   t5:0,   t6:0,   mgmt:true},
+  {n:'ライ',   m3:0,   m4:0,   m5:0,   m6:0,   t3:null,t4:null,t5:0,   t6:0,   mgmt:true},
+  {n:'リュウガ',     m3:0,   m4:0,   m5:0,   m6:0,   t3:0,   t4:0,   t5:0,   t6:null, mgmt:true},
+  {n:'ツキ',   m3:null,m4:null,m5:0,   m6:2,   t3:null,t4:null,t5:0,   t6:1,   tag6:'退店'},
+];
+
+// ============================================================
+// MONTHLY QUALITATIVE REPORTS
+// ============================================================
+const MONTHLY_REPORTS = {
+  '2026-06': {
+    create: {
+      manager: 'シュン',
+      theme: '卓数と人事の強化',
+      good: ['若い子達の売上上昇', '幹部候補が出始めた', 'レギュラー入店2名'],
+      issues: ['土台作り・営業前後の空気感改善', 'カケルへの結果作り'],
+      events: [
+        {name:'全体卓数勝負', result:'当たる施策と判明'},
+        {name:'チーム別卓数・売上勝負', result:'継続実施'},
+        {name:'ジンバBD', result:''},
+        {name:'ゼンBD', result:''},
+      ],
+      spotlight: [{n:'ルナ', note:'幹部候補・急成長（5月71万→6月277万 +290%）'}],
+      concerns: ['幹部意識の低さ（全体）'],
+      nextEvents: ['全体卓数勝負継続', 'ルナBD'],
+      staffIn:2, staffOut:0, promoted:[],
+    },
+    plus: {
+      manager: 'ミライ',
+      theme: '人間指導・キャスト増員',
+      good: ['リーダー陣のベクトル統一', '体を動かし続けた'],
+      issues: ['タスク管理', '指示の出し方'],
+      events: [
+        {name:'新規卓数・売上勝負（3ヶ月目）', result:'マンネリ気味 → 次手が必要'},
+        {name:'ひなたBD', result:'チームで祝う文化が定着'},
+      ],
+      spotlight: [
+        {n:'ひなた', note:'売上465万・チームの誕生日文化牽引'},
+        {n:'みなと', note:'急成長中（要観察：態度の傲慢化）'},
+      ],
+      concerns: ['みなと — 数字上昇に伴う態度・接客の傲慢化', 'ひなた — 幹部としての自覚なし'],
+      nextEvents: ['リーダー日次面談', '個人課題制導入'],
+      staffIn:0, staffOut:0, promoted:['ヒナ → リーダー'],
+    }
+  }
+};
+
+// EVENT CALENDAR (BDs, campaigns — month-level granularity)
+const EVENTS = [
+  {month:'2026-06', store:'plus',   type:'BD',       name:'ひなた'},
+  {month:'2026-06', store:'create', type:'BD',       name:'ジンバ'},
+  {month:'2026-06', store:'create', type:'BD',       name:'ゼン'},
+  {month:'2026-07', store:'create', type:'BD',       name:'ルナ'},
+];
+
+// ============================================================
+// STATE & CHARTS
+// ============================================================
+const MONTHS = Object.keys(MONTHLY).sort();
+let curIdx = MONTHS.length - 1;
+let activeTab = 'group';
+let gTrend, gShare, cTrend, pTrend, gVol, cVol, pVol;
+
+// 7月報告分から個人売上はTAX込み集計に変更（m7以降のデータが入ると自動で注記が付く）
+const TAX_INCLUSIVE_FROM_MONTH = 7;
+function taxNote(mNum){ return mNum>=TAX_INCLUSIVE_FROM_MONTH ? '<span style="font-size:8px;color:#888;margin-left:2px">(税込)</span>' : ''; }
+function tKeyOf(key){ return 't'+parseInt(key.split('-')[1]); }
+function staffCount(arr, mNum){ return arr.filter(d=>d['m'+mNum]!=null).length; }
+
+// 総卓数＋スタッフ数 複合チャート（棒＝卓数 / 折れ線＝スタッフ数）
+function makeVolChart(canvasId, barDatasets, staffData){
+  return new Chart(document.getElementById(canvasId),{
+    type:'bar',
+    data:{
+      labels:MONTHS.map(m=>parseInt(m.split('-')[1])+'月'),
+      datasets:[
+        ...barDatasets,
+        {type:'line',label:'スタッフ数',data:staffData,
+         borderColor:'#e0e0e0',backgroundColor:'transparent',borderWidth:2,
+         pointRadius:3,pointBackgroundColor:'#e0e0e0',tension:.3,yAxisID:'y1'},
+      ],
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#fff',font:{size:11},boxWidth:10}}},
+      scales:{
+        x:{stacked:true,ticks:{color:'#fff',font:{size:11}},grid:{color:'#2a2a2a'}},
+        y:{stacked:true,ticks:{color:'#fff',font:{size:11},callback:v=>v+'卓'},grid:{color:'#2a2a2a'},min:0},
+        y1:{position:'right',ticks:{color:'#888',font:{size:10},callback:v=>v+'名',precision:0},grid:{display:false},min:0},
+      },
+    },
+  });
+}
+
+// 総卓数ランキングテーブル（売上ランキングと同形式）
+function renderVolRank(tableId, cast, key, prevKey, showStore){
+  const tk=tKeyOf(key), pk=prevKey?tKeyOf(prevKey):null;
+  const curMNum=parseInt(key.split('-')[1]);
+  const exited=(d,mNum)=>{for(let n=3;n<=mNum;n++){if(d['tag'+n]==='退店')return true;}return false;};
+  const ranked=cast.filter(d=>(d[tk]??0)>0&&!exited(d,curMNum)).sort((a,b)=>(b[tk]??0)-(a[tk]??0));
+  document.getElementById(tableId).innerHTML=`
+    <thead><tr><th>#</th><th style="text-align:left">名前</th>${showStore?'<th>店舗</th>':''}<th>総卓数</th>${pk?'<th>前月比</th>':''}</tr></thead>
+    <tbody>${ranked.map((d,i)=>{
+      const cur=d[tk]??0, prv=pk?(d[pk]??0):0;
+      const momHtml=pk?(prv===0?'<td style="color:#666">—</td>':`<td>${fmtMoM(cur,prv)}</td>`):'';
+      const storeHtml=showStore?`<td><span style="font-size:9px;background:${d.store==='LUME'?'rgba(196,151,74,0.15)':'rgba(109,184,109,0.15)'};color:${d.store==='LUME'?'#c4974a':'#6db86d'};padding:2px 7px;border-radius:3px;letter-spacing:.08em">${d.store}</span></td>`:'';
+      return `<tr>
+        <td style="color:#c4974a;font-family:'EB Garamond',serif;font-size:16px">${i+1}</td>
+        <td>${d.n}</td>
+        ${storeHtml}
+        <td style="font-family:'EB Garamond',serif;color:#e8e8e8">${cur}卓</td>
+        ${momHtml}
+      </tr>`;}).join('')}
+    </tbody>`;
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function fmt(n) {
+  if(n==null) return '—';
+  if(n>=100000000) return (n/100000000).toFixed(1)+'億';
+  if(n>=10000) return Math.round(n/10000)+'万';
+  return n.toLocaleString();
+}
+function fmtMoM(cur, prev, invert=false) {
+  if(!prev||prev===0) return '';
+  const p=((cur-prev)/prev*100).toFixed(1);
+  const isUp=p>0;
+  const cls=p==0?'flat':(isUp!==invert)?'up':'down';
+  return `<span class="${cls}">${isUp?'▲':'▼'}${Math.abs(p)}% MoM</span>`;
+}
+function achClass(r){ return r>=100?'ach-over':r<75?'ach-low':'ach-mid'; }
+function fmtMonth(key){ const[y,m]=key.split('-'); return `${y}年${parseInt(m)}月`; }
+function mKey(key){ return 'm'+parseInt(key.split('-')[1]); }
+function isExited(d, curMNum){
+  for(let n=3;n<curMNum;n++){ if(d['tag'+n]==='退店') return true; }
+  return false;
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function navigate(dir) {
+  const n=curIdx+dir;
+  if(n>=0&&n<MONTHS.length){curIdx=n;renderAll();}
+}
+function switchTab(tab, el) {
+  activeTab=tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('monthNav').style.display = (tab==='roadmap')?'none':'flex';
+  renderAll();
+}
+
+// ============================================================
+// INTEL ENGINE
+// ============================================================
+function generateIntel(key, prevKey) {
+  const monthIdx=MONTHS.indexOf(key);
+  const cur=MONTHLY[key];
+  const signals=[],actions=[];
+  const createRisers=[],plusRisers=[];
+  const createFallers=[],plusFallers=[];
+  const createZeros=[],plusZeros=[];
+
+  function gv(m,idx){ return (m[mKey(MONTHS[idx])]??0); }
+  function scanStore(arr, label, isCreate) {
+    const localRisers=[];
+    arr.forEach(m=>{
+      const v=gv(m,monthIdx);
+      const pv=monthIdx>0?gv(m,monthIdx-1):null;
+      const pp=monthIdx>1?gv(m,monthIdx-2):null;
+      if(!m.mgmt&&monthIdx>=2&&v===0&&pv===0&&pp===0
+         &&m[mKey(MONTHS[monthIdx])]!=null
+         &&m[mKey(MONTHS[monthIdx-1])]!=null
+         &&m[mKey(MONTHS[monthIdx-2])]!=null){
+        signals.push({type:'critical',text:`${m.n}（${label}）`,detail:'3ヶ月連続売上0万 — 在籍継続の判断が必要'});
+        if(isCreate) createZeros.push(m.n); else plusZeros.push(m.n);
+      } else if(pv!==null&&pv>=30&&v<pv*0.7){
+        const p=Math.round((v-pv)/pv*100);
+        signals.push({type:'warning',text:`${m.n}（${label}）急落 ${p}%`,detail:`${pv}万 → ${v}万 — 原因確認が必要`});
+        if(isCreate) createFallers.push(m.n); else plusFallers.push(m.n);
+      }
+      if(pv!==null&&pv>0&&v>=pv*1.5&&v>=50){
+        const p=Math.round((v-pv)/pv*100);
+        localRisers.push({type:'positive',text:`${m.n}（${label}）急成長 +${p}%`,detail:`${pv}万 → ${v}万`,pct:p,isCreate,n:m.n});
+      }
+    });
+    return localRisers;
+  }
+  const allRisers=[...scanStore(LUME_INDIV,'本店',true),...scanStore(PLUS_INDIV,'PLUS',false)];
+  allRisers.sort((a,b)=>b.pct-a.pct);
+  allRisers.slice(0,3).forEach(s=>{
+    signals.push(s);
+    if(s.isCreate) createRisers.push(s.n); else plusRisers.push(s.n);
+  });
+
+  const hA=cur.LUME.achRate, pA=cur.PLUS.achRate;
+  if(hA>=100) signals.push({type:'positive',text:`本店 目標達成 ${hA}%`,detail:fmt(cur.LUME.target)+' 突破'});
+  else if(hA<80) signals.push({type:'warning',text:`本店 達成率 ${hA}%`,detail:`目標まで ${100-hA}pt 未達`});
+  if(pA>=100) signals.push({type:'positive',text:`PLUS 目標達成 ${pA}%`,detail:fmt(cur.PLUS.target)+' 突破'});
+  else if(pA<80) signals.push({type:'warning',text:`PLUS 達成率 ${pA}%`,detail:`目標まで ${100-pA}pt 未達`});
+
+  if(cur.PLUS.uncRate<3.5) signals.push({type:'positive',text:`PLUS 未収率 ${cur.PLUS.uncRate}%`,detail:'低水準維持 — 指名固定化が進んでいる'});
+  else if(cur.PLUS.uncRate>6) signals.push({type:'warning',text:`PLUS 未収率 ${cur.PLUS.uncRate}%`,detail:'高水準 — 回収強化が必要'});
+
+  if(cur.PLUS.repeatRate>=40) signals.push({type:'positive',text:`PLUS リピート率 ${cur.PLUS.repeatRate}%`,detail:'固定客が増加中 — VIP育成フェーズへ'});
+
+  if(prevKey&&MONTHS.indexOf(prevKey)>0){
+    const pk2=MONTHS[MONTHS.indexOf(prevKey)-1];
+    const ct=LUME_TEAMS[key],pt=LUME_TEAMS[prevKey],pt2=LUME_TEAMS[pk2];
+    if(ct&&pt&&pt2) ct.forEach(team=>{
+      const p=pt.find(t=>t.n===team.n),p2=pt2.find(t=>t.n===team.n);
+      if(p&&p2&&team.r<p.r&&p.r<p2.r)
+        signals.push({type:'critical',text:`${team.n} 達成率 ${team.r}%`,detail:`3ヶ月連続下落（${p2.r}%→${p.r}%→${team.r}%）`});
+    });
+  }
+
+  if(createRisers.length) actions.push({who:'しゅん',  text:`${createRisers.join('・')} を今週中に個別面談 — 成功要因を言語化させ横展開のネタにする`});
+  if(plusRisers.length)   actions.push({who:'ミライ',text:`${plusRisers.join('・')} を今週中に個別面談 — 成功要因を言語化させ横展開のネタにする`});
+  if(createFallers.length) actions.push({who:'しゅん', text:`${createFallers.join('・')} の急落原因を今月中に把握 — プライベートか指名離れかで対処が変わる`});
+  if(plusFallers.length)   actions.push({who:'ミライ',text:`${plusFallers.join('・')} の急落原因を今月中に把握 — プライベートか指名離れかで対処が変わる`});
+  if(createZeros.length)   actions.push({who:'しゅん', text:`${createZeros.join('・')} — 在籍意思の確認とリソース配分の見直しを`});
+  if(plusZeros.length)     actions.push({who:'ミライ',text:`${plusZeros.join('・')} — 在籍意思の確認とリソース配分の見直しを`});
+
+  if(cur.PLUS.repeatRate>=40)
+    actions.push({who:'本部',text:`PLUSのリピート率${cur.PLUS.repeatRate}%・未収率${cur.PLUS.uncRate}%は固定客育成フェーズのシグナル — 新規SNS集客より既存VIPの深耕（LINE・アフターフォロー）に投資重心を移す提言をオーナーへ`});
+
+  const gTotal=Math.round((cur.LUME.sales+cur.PLUS.sales)/10000);
+  const annual=gTotal*12;
+  const gap=Math.round((100000-annual)/10000*10)/10;
+  if(gap>0) actions.push({who:'本部',text:`今月ペース月${gTotal}万 → 年換算${(annual/10000).toFixed(1)}億。10億目標まで年間約${gap}億のギャップ — 早期覚醒型新人の採用強化が最短ルート`});
+
+  return {signals,actions};
+}
+
+function renderIntel(key,prevKey){
+  const {signals,actions}=generateIntel(key,prevKey);
+  const el=document.getElementById('intelSection');
+  const iMap={critical:'⚑',warning:'▲',positive:'◆'};
+  const cMap={critical:'#c76b6b',warning:'#d4a74a',positive:'#6db86d'};
+  const bgMap={critical:'#2a1a1a',warning:'#231e10',positive:'#132013'};
+  const brMap={critical:'#5a2020',warning:'#5a4010',positive:'#204020'};
+
+  const sHtml=signals.length?signals.map(s=>`
+    <div style="display:flex;gap:10px;align-items:flex-start;padding:9px 12px;background:${bgMap[s.type]};border:1px solid ${brMap[s.type]};border-radius:4px;margin-bottom:6px">
+      <span style="color:${cMap[s.type]};font-size:11px;flex-shrink:0;margin-top:1px">${iMap[s.type]}</span>
+      <div>
+        <div style="font-size:12px;color:${cMap[s.type]}">${s.text}</div>
+        <div style="font-size:11px;color:#fff;margin-top:2px">${s.detail}</div>
+      </div>
+    </div>`).join(''):'<div style="font-size:11px;color:#444;padding:4px 0">検出なし</div>';
+
+  const aHtml=actions.length?actions.map(a=>{
+    const isK=a.who==='本部', isSho=a.who==='ミライ';
+    const tc=isK?'#c4974a':isSho?'#7aadaa':'#d4845c';
+    const tb=isK?'#2a2010':isSho?'#0a1a18':'#2a1800';
+    return `<div style="padding:10px 12px;background:#1e1e1e;border:1px solid #2e2e2e;border-left:2px solid ${tc};border-radius:4px;margin-bottom:6px">
+      <div style="display:inline-block;font-size:9px;color:${tc};background:${tb};border:1px solid ${tc}44;border-radius:3px;padding:1px 6px;letter-spacing:.08em;margin-bottom:5px">${a.who}</div>
+      <div style="font-size:12px;color:#e8e8e8;line-height:1.65">${a.text}</div>
+    </div>`;
+  }).join(''):'<div style="font-size:11px;color:#444;padding:4px 0">なし</div>';
+
+  el.innerHTML=`
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-title">INTEL — 自動シグナル＆アクション</div>
+      <div class="intel-grid">
+        <div>
+          <div style="font-size:9px;color:#fff;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">SIGNALS</div>
+          ${sHtml}
+        </div>
+        <div>
+          <div style="font-size:9px;color:#fff;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">ACTION ITEMS</div>
+          ${aHtml}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// RENDER DISPATCH
+// ============================================================
+function renderAll() {
+  const key=MONTHS[curIdx];
+  const prev=curIdx>0?MONTHS[curIdx-1]:null;
+  document.getElementById('monthLabel').textContent=fmtMonth(key);
+  document.getElementById('navPrev').disabled=(curIdx===0);
+  document.getElementById('navNext').disabled=(curIdx===MONTHS.length-1);
+  if(activeTab==='group')  renderGroup(key,prev);
+  if(activeTab==='create') renderCreate(key,prev);
+  if(activeTab==='plus')   renderPlus(key,prev);
+  if(activeTab==='report') renderReport(key);
+}
+
+// ============================================================
+// GROUP
+// ============================================================
+function renderGroup(key, prevKey) {
+  renderIntel(key, prevKey);
+  const c=MONTHLY[key], p=prevKey?MONTHLY[prevKey]:null;
+  const gs=c.LUME.sales+c.PLUS.sales;
+  const gt=c.LUME.target+c.PLUS.target;
+  const ps=p?p.LUME.sales+p.PLUS.sales:0;
+  const gr=Math.round(gs/gt*100);
+
+  // KPIs
+  const kpis=[
+    {l:'グループ総売上', v:fmt(gs),                   ch:p?fmtMoM(gs,ps):''},
+    {l:'グループ達成率', v:gr,    u:'%',              ch:'', good:gr>=100},
+    {l:'LUME 達成率',  v:c.LUME.achRate, u:'%',  ch:'', good:c.LUME.achRate>=100},
+    {l:'PLUS 達成率',    v:c.PLUS.achRate,   u:'%',  ch:'', good:c.PLUS.achRate>=100},
+    {l:'年換算ペース',   v:(gs/10000*12/10000).toFixed(1), u:'億', ch:''},
+  ];
+  document.getElementById('groupKpi').innerHTML=kpis.map(k=>`
+    <div class="kpi">
+      <div class="kpi-label">${k.l}</div>
+      <div class="kpi-value${k.good?' good':''}">${k.v}<span class="kpi-unit">${k.u||''}</span></div>
+      <div class="kpi-change">${k.ch}</div>
+    </div>`).join('');
+
+  // Trend chart
+  const tLabels=MONTHS.map(m=>parseInt(m.split('-')[1])+'月');
+  if(gTrend) gTrend.destroy();
+  gTrend=new Chart(document.getElementById('gTrendChart'),{
+    type:'bar',
+    data:{
+      labels:tLabels,
+      datasets:[
+        {label:'LUME',data:MONTHS.map(m=>Math.round(MONTHLY[m].LUME.sales/10000)),backgroundColor:'#c4974acc',borderColor:'#c4974a',borderWidth:1,stack:'s'},
+        {label:'PLUS',  data:MONTHS.map(m=>Math.round(MONTHLY[m].PLUS.sales/10000)),  backgroundColor:'#7aadaacc',borderColor:'#7aadaa',borderWidth:1,stack:'s'},
+      ],
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#fff',font:{size:11},boxWidth:10}}},
+      scales:{
+        x:{stacked:true,ticks:{color:'#fff',font:{size:11}},grid:{color:'#2a2a2a'}},
+        y:{stacked:true,ticks:{color:'#fff',font:{size:11},callback:v=>v+'万'},grid:{color:'#2a2a2a'}},
+      },
+    },
+  });
+
+  // Share doughnut
+  if(gShare) gShare.destroy();
+  gShare=new Chart(document.getElementById('gShareChart'),{
+    type:'doughnut',
+    data:{
+      labels:['LUME','PLUS'],
+      datasets:[{
+        data:[Math.round(c.LUME.sales/10000),Math.round(c.PLUS.sales/10000)],
+        backgroundColor:['#c4974acc','#7aadaacc'],
+        borderColor:['#c4974a','#7aadaa'],borderWidth:2,
+      }],
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#fff',font:{size:11},boxWidth:10,padding:14}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed}万`}},
+      },
+    },
+  });
+
+  // 総卓数・スタッフ数推移
+  if(gVol) gVol.destroy();
+  gVol=makeVolChart('gVolChart',[
+    {label:'LUME',data:MONTHS.map(m=>MONTHLY[m].LUME.totalV),backgroundColor:'#c4974acc',borderColor:'#c4974a',borderWidth:1,stack:'v'},
+    {label:'PLUS',  data:MONTHS.map(m=>MONTHLY[m].PLUS.totalV),  backgroundColor:'#7aadaacc',borderColor:'#7aadaa',borderWidth:1,stack:'v'},
+  ],MONTHS.map(m=>{const n=parseInt(m.split('-')[1]);return staffCount(LUME_INDIV,n)+staffCount(PLUS_INDIV,n);}));
+
+  // Achievement cards
+  function achHtml(d){
+    const r=d.achRate, color=r>=100?'#6db86d':'#c4974a';
+    return `
+      <div style="text-align:center;padding:12px 0 8px;">
+        <div style="font-family:'EB Garamond',serif;font-size:46px;color:${color};line-height:1">${r}<span style="font-size:16px;color:#fff">%</span></div>
+        <div style="font-size:9px;color:#fff;letter-spacing:.1em;text-transform:uppercase;margin-top:6px;">達成率</div>
+      </div>
+      <div style="font-size:12px;color:#fff;padding:0 4px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span>売上</span><span style="color:${color};font-family:'EB Garamond',serif;font-size:16px;">${fmt(d.sales)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+          <span>目標</span><span>${fmt(d.target)}</span>
+        </div>
+        <div class="ach-bar-bg"><div class="ach-bar ${achClass(r)}" style="width:${Math.min(r,100)}%"></div></div>
+      </div>`;
+  }
+  document.getElementById('createAch').innerHTML=achHtml(c.LUME);
+  document.getElementById('plusAch').innerHTML=achHtml(c.PLUS);
+
+  // GROUP個人ランキング
+  const mk2=mKey(key);
+  const mk1=prevKey?mKey(prevKey):null;
+  const allCast=[
+    ...LUME_INDIV.map(d=>({...d,store:'LUME'})),
+    ...PLUS_INDIV.map(d=>({...d,store:'PLUS'}))
+  ];
+  const exitedByNow=(d,mNum)=>{for(let n=3;n<=mNum;n++){if(d['tag'+n]==='退店')return true;}return false;};
+  const curMNumG=parseInt(key.split('-')[1]);
+  const ranked=allCast.filter(d=>d[mk2]>0&&!exitedByNow(d,curMNumG)).sort((a,b)=>(b[mk2]??0)-(a[mk2]??0));
+  let prevRank=null;
+  if(mk1){
+    const prevMNumG=parseInt(prevKey.split('-')[1]);
+    prevRank={};
+    allCast.filter(d=>d[mk1]>0&&!exitedByNow(d,prevMNumG)).sort((a,b)=>(b[mk1]??0)-(a[mk1]??0)).forEach((d,i)=>{prevRank[d.store+'|'+d.n]=i+1;});
+  }
+  document.getElementById('groupRankTable').innerHTML=`
+    <thead><tr><th>#</th><th style="text-align:left">名前</th><th>店舗</th><th>売上</th>${mk1?'<th>前月比</th>':''}</tr></thead>
+    <tbody>${ranked.map((d,i)=>{
+      const cur=d[mk2]??0, prv=mk1?(d[mk1]??0):0;
+      const momHtml=mk1?(prv===0?'<td style="color:#666">—</td>':`<td>${fmtMoM(cur,prv)}</td>`):'';
+      let rkHtml='';
+      if(prevRank){
+        const pr=prevRank[d.store+'|'+d.n];
+        if(pr==null) rkHtml='<span style="font-size:8px;color:#c4974a;letter-spacing:.06em;margin-left:4px;vertical-align:middle">NEW</span>';
+        else if(pr>i+1) rkHtml=`<span style="font-size:10px;color:#6db86d;margin-left:4px;vertical-align:middle">↑${pr-(i+1)}</span>`;
+        else if(pr<i+1) rkHtml=`<span style="font-size:10px;color:#c76b6b;margin-left:4px;vertical-align:middle">↓${(i+1)-pr}</span>`;
+      }
+      return `<tr>
+        <td style="color:#c4974a;font-family:'EB Garamond',serif;font-size:16px;white-space:nowrap">${i+1}${rkHtml}</td>
+        <td>${d.n}</td>
+        <td><span style="font-size:9px;background:${d.store==='LUME'?'rgba(196,151,74,0.15)':'rgba(109,184,109,0.15)'};color:${d.store==='LUME'?'#c4974a':'#6db86d'};padding:2px 7px;border-radius:3px;letter-spacing:.08em">${d.store}</span></td>
+        <td style="font-family:'EB Garamond',serif;color:#e8e8e8">${d[mk2]}万</td>
+        ${momHtml}
+      </tr>`;}).join('')}
+    </tbody>`;
+
+  // GROUP個人総卓数ランキング
+  renderVolRank('groupVolRankTable', allCast, key, prevKey, true);
+
+  // Compare table
+  document.getElementById('groupCmpTable').innerHTML=`
+    <thead><tr>
+      <th style="text-align:left">指標</th><th>LUME</th><th>LUME PLUS</th><th>GROUP合計</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>売上</td><td>${fmt(c.LUME.sales)}</td><td>${fmt(c.PLUS.sales)}</td><td style="color:#c4974a;font-family:'EB Garamond',serif;">${fmt(gs)}</td></tr>
+      <tr><td>目標</td><td>${fmt(c.LUME.target)}</td><td>${fmt(c.PLUS.target)}</td><td>${fmt(gt)}</td></tr>
+      <tr><td>達成率</td><td>${c.LUME.achRate}%</td><td>${c.PLUS.achRate}%</td><td>${gr}%</td></tr>
+      <tr><td>新規客数</td><td>${c.LUME.newC}名</td><td>${c.PLUS.newC}名</td><td>${c.LUME.newC+c.PLUS.newC}名</td></tr>
+      ${p?`<tr class="total-row"><td>前月比（売上）</td><td>${fmtMoM(c.LUME.sales,p.LUME.sales)}</td><td>${fmtMoM(c.PLUS.sales,p.PLUS.sales)}</td><td>${fmtMoM(gs,ps)}</td></tr>`:''}
+    </tbody>`;
+}
+
+// ============================================================
+// LUME
+// ============================================================
+function renderCreate(key, prevKey) {
+  const c=MONTHLY[key].LUME, p=prevKey?MONTHLY[prevKey].LUME:null;
+  const mk=mKey(key);
+
+  // KPIs
+  document.getElementById('createKpi').innerHTML=[
+    {l:'当月売上',  v:fmt(c.sales),    ch:p?fmtMoM(c.sales,p.sales):''},
+    {l:'月間目標',  v:fmt(c.target),   ch:''},
+    {l:'達成率',    v:c.achRate, u:'%',ch:'', good:c.achRate>=100},
+    {l:'総卓数',    v:c.totalV,  u:'卓',ch:p?fmtMoM(c.totalV,p.totalV):''},
+  ].map(k=>`
+    <div class="kpi">
+      <div class="kpi-label">${k.l}</div>
+      <div class="kpi-value${k.good?' good':''}">${k.v}<span class="kpi-unit">${k.u||''}</span></div>
+      <div class="kpi-change">${k.ch}</div>
+    </div>`).join('');
+
+  // 13-month trend
+  if(cTrend) cTrend.destroy();
+  const tVals=LUME_TREND.map(d=>Math.round(d.s/10000));
+  cTrend=new Chart(document.getElementById('cTrendChart'),{
+    type:'bar',
+    data:{
+      labels:LUME_TREND.map(d=>d.m),
+      datasets:[
+        {
+          type:'line',data:tVals,label:'売上',
+          borderColor:'#c4974a',backgroundColor:'transparent',
+          borderWidth:2,pointRadius:3,pointBackgroundColor:'#c4974a',tension:.3,
+        },
+        {
+          type:'bar',data:tVals,label:'',
+          backgroundColor:tVals.map((_,i)=>i===tVals.length-1?'#c4974a55':'#c4974a22'),
+          borderColor:'transparent',borderWidth:0,
+        },
+      ],
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>`${ctx.parsed.y}万`}}},
+      scales:{
+        x:{ticks:{color:'#fff',font:{size:10}},grid:{color:'#2a2a2a'}},
+        y:{ticks:{color:'#fff',font:{size:10},callback:v=>v+'万'},grid:{color:'#2a2a2a'},min:0},
+      },
+    },
+  });
+
+  // 総卓数・スタッフ数推移
+  if(cVol) cVol.destroy();
+  cVol=makeVolChart('cVolChart',[
+    {label:'総卓数',data:MONTHS.map(m=>MONTHLY[m].LUME.totalV),backgroundColor:'#c4974a55',borderColor:'#c4974a',borderWidth:1},
+  ],MONTHS.map(m=>staffCount(LUME_INDIV,parseInt(m.split('-')[1]))));
+
+  // Individual table — sorted by current month, dynamic columns (last 3 months)
+  const curMNum=parseInt(key.split('-')[1]);
+  const tkC=tKeyOf(key);
+  const sorted=[...LUME_INDIV].filter(d=>!isExited(d,curMNum)).sort((a,b)=>(b[mk]??-1)-(a[mk]??-1));
+  const recentMonths=MONTHS.slice(-3);
+  document.getElementById('cIndivTable').innerHTML=`
+    <thead><tr>
+      <th style="text-align:left">スタッフ</th>
+      ${recentMonths.map(m=>{const tn=parseInt(m.split('-')[1]);return`<th style="color:${m===key?'#c4974a':'#555'}">${tn}月${taxNote(tn)}</th>`;}).join('')}
+      <th style="color:#c4974a">卓数</th>
+    </tr></thead>
+    <tbody>${sorted.map(d=>{
+      const tagHtml=recentMonths.map(m=>{const tn=parseInt(m.split('-')[1]);const t=d['tag'+tn];if(!t)return '';const cls=t==='退店'?'badge-exit':t==='移籍'?'badge-move':'badge-new';return`<span class="badge ${cls}">${t}</span>`;}).join('');
+      const mgmtBadge=d.mgmt?`<span class="badge badge-move">運営</span>`:'';
+      return`<tr>
+        <td>${d.n}${mgmtBadge}${tagHtml}</td>
+        ${recentMonths.map(m=>{const mk2=mKey(m);return`<td style="color:${m===key?'#e0e0e0':'#555'}">${d[mk2]??'—'}</td>`;}).join('')}
+        <td style="color:#e0e0e0">${d[tkC]??'—'}</td>
+      </tr>`;}).join('')}</tbody>`;
+
+  // 個人総卓数ランキング
+  renderVolRank('cVolRankTable', LUME_INDIV, key, prevKey, false);
+}
+
+// ============================================================
+// PLUS
+// ============================================================
+function renderPlus(key, prevKey) {
+  const c=MONTHLY[key].PLUS, p=prevKey?MONTHLY[prevKey].PLUS:null;
+  const mk=mKey(key);
+
+  // KPIs
+  document.getElementById('plusKpi').innerHTML=[
+    {l:'当月売上',   v:fmt(c.sales),       ch:p?fmtMoM(c.sales,p.sales):''},
+    {l:'月間目標',   v:fmt(c.target),      ch:''},
+    {l:'達成率',     v:c.achRate, u:'%',   ch:'', good:c.achRate>=100},
+    {l:'客単価',     v:'¥'+c.avgSpend.toLocaleString(), ch:p?fmtMoM(c.avgSpend,p.avgSpend):''},
+    {l:'リピート率', v:c.repeatRate, u:'%',ch:p?fmtMoM(c.repeatRate,p.repeatRate):''},
+    {l:'未収率',     v:c.uncRate,    u:'%',ch:p?fmtMoM(c.uncRate,p.uncRate,true):''},
+  ].map(k=>`
+    <div class="kpi">
+      <div class="kpi-label">${k.l}</div>
+      <div class="kpi-value${k.good?' good':''}">${k.v}<span class="kpi-unit">${k.u||''}</span></div>
+      <div class="kpi-change">${k.ch}</div>
+    </div>`).join('');
+
+  // Trend chart
+  if(pTrend) pTrend.destroy();
+  pTrend=new Chart(document.getElementById('pTrendChart'),{
+    type:'line',
+    data:{
+      labels:MONTHS.map(m=>parseInt(m.split('-')[1])+'月'),
+      datasets:[
+        {
+          label:'売上',
+          data:MONTHS.map(m=>Math.round(MONTHLY[m].PLUS.sales/10000)),
+          borderColor:'#7aadaa',backgroundColor:'#7aadaa18',
+          borderWidth:2,fill:true,tension:.3,pointRadius:5,pointBackgroundColor:'#7aadaa',
+        },
+        {
+          label:'目標',
+          data:MONTHS.map(m=>Math.round(MONTHLY[m].PLUS.target/10000)),
+          borderColor:'#444',backgroundColor:'transparent',
+          borderWidth:1,borderDash:[5,5],pointRadius:0,tension:0,
+        },
+      ],
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#fff',font:{size:11},boxWidth:10}}},
+      scales:{
+        x:{ticks:{color:'#fff',font:{size:11}},grid:{color:'#2a2a2a'}},
+        y:{ticks:{color:'#fff',font:{size:11},callback:v=>v+'万'},grid:{color:'#2a2a2a'},min:0},
+      },
+    },
+  });
+
+  // 総卓数・スタッフ数推移
+  if(pVol) pVol.destroy();
+  pVol=makeVolChart('pVolChart',[
+    {label:'総卓数',data:MONTHS.map(m=>MONTHLY[m].PLUS.totalV),backgroundColor:'#7aadaa55',borderColor:'#7aadaa',borderWidth:1},
+  ],MONTHS.map(m=>staffCount(PLUS_INDIV,parseInt(m.split('-')[1]))));
+
+  // Individual
+  const curMNumP=parseInt(key.split('-')[1]);
+  const tkP=tKeyOf(key);
+  const sorted=[...PLUS_INDIV].filter(d=>!isExited(d,curMNumP)).sort((a,b)=>(b[mk]??-1)-(a[mk]??-1));
+  function tagHtml(d){
+    const tags=[];
+    [d.tag3,d.tag4,d.tag5,d.tag6].forEach(t=>{
+      if(!t) return;
+      const cls=t==='退店'?'badge-exit':t==='移籍'?'badge-move':'badge-new';
+      tags.push(`<span class="badge ${cls}">${t}</span>`);
+    });
+    return tags.join('');
+  }
+  const recentMonthsP=MONTHS.slice(-3);
+  document.getElementById('pIndivTable').innerHTML=`
+    <thead><tr>
+      <th style="text-align:left">スタッフ</th>
+      ${recentMonthsP.map(m=>{const tn=parseInt(m.split('-')[1]);return`<th style="color:${m===key?'#c4974a':'#555'}">${tn}月${taxNote(tn)}</th>`;}).join('')}
+      <th style="color:#c4974a">卓数</th>
+    </tr></thead>
+    <tbody>${sorted.map(d=>`
+      <tr>
+        <td>${d.n}${d.mgmt?'<span class="badge badge-move">運営</span>':''}${tagHtml(d)}</td>
+        ${recentMonthsP.map(m=>{const mk2=mKey(m);return`<td style="color:${m===key?'#e0e0e0':'#555'}">${d[mk2]!=null?d[mk2]:'—'}</td>`;}).join('')}
+        <td style="color:#e0e0e0">${d[tkP]??'—'}</td>
+      </tr>`).join('')}</tbody>`;
+
+  // 個人総卓数ランキング
+  renderVolRank('pVolRankTable', PLUS_INDIV, key, prevKey, false);
+}
+
+// ============================================================
+// REPORT
+// ============================================================
+function renderReport(key) {
+  const r = MONTHLY_REPORTS[key];
+  const nextKey = curIdx < MONTHS.length-1 ? MONTHS[curIdx+1] : null;
+
+  // Event calendar (current + next month)
+  const evts = EVENTS.filter(e => e.month===key || e.month===nextKey);
+  const evtHtml = evts.length ? evts.map(e => {
+    const sc = e.store==='create'?'#c4974a':'#7aadaa';
+    const isCurrent = e.month===key;
+    return `<div style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid #282828;border-left:2px solid ${sc};border-radius:4px">
+      <div style="font-size:9px;color:${sc};letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">${e.store==='create'?'LUME':'LUME PLUS'} — ${parseInt(e.month.split('-')[1])}月${isCurrent?'':' <span style="color:#555">（翌月）</span>'}</div>
+      <div style="font-size:13px;color:#ccc">${e.type==='BD'?'🎂 ':'◆ '}${e.name}</div>
+      <div style="font-size:9px;color:#555;margin-top:2px">${e.type}</div>
+    </div>`;
+  }).join('') : '<div style="font-size:11px;color:#444">イベントデータなし</div>';
+
+  document.getElementById('reportEventCard').innerHTML = `
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title">イベント・BD カレンダー（当月＋翌月）</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px">${evtHtml}</div>
+    </div>`;
+
+  if (!r) {
+    document.getElementById('reportStoreCards').innerHTML = '<div class="card" style="text-align:center;color:#444;padding:40px;grid-column:1/-1">この月のレポートデータはありません</div>';
+    return;
+  }
+
+  function storeCard(d, label, color) {
+    if (!d) return '<div class="card" style="text-align:center;color:#444;padding:30px">データなし</div>';
+    const row = (items,c='#bbb') => (items||[]).map(i=>`<div style="padding:5px 0;border-bottom:1px solid #1e1e1e;font-size:12px;color:${c};line-height:1.5">${i}</div>`).join('');
+    const evtRows = (d.events||[]).map(e=>`
+      <div style="padding:6px 0;border-bottom:1px solid #1e1e1e;">
+        <span style="font-size:12px;color:#ccc">${e.name}</span>
+        ${e.result?`<span style="font-size:10px;color:#666;margin-left:8px">${e.result}</span>`:''}
+      </div>`).join('');
+    const spotRows = (d.spotlight||[]).map(s=>`
+      <div style="padding:6px 10px;background:rgba(196,151,74,0.07);border:1px solid rgba(196,151,74,0.15);border-radius:4px;margin-bottom:5px">
+        <span style="color:#c4974a;font-size:13px">${s.n}</span>
+        <span style="font-size:11px;color:#888;margin-left:8px">${s.note}</span>
+      </div>`).join('');
+    const badges = [];
+    if (d.staffIn)  badges.push(`<span style="background:rgba(109,184,109,0.1);color:#6db86d;border:1px solid rgba(109,184,109,0.25);border-radius:3px;padding:2px 8px;font-size:10px">入店 ${d.staffIn}名</span>`);
+    if (d.staffOut) badges.push(`<span style="background:rgba(199,107,107,0.1);color:#c76b6b;border:1px solid rgba(199,107,107,0.25);border-radius:3px;padding:2px 8px;font-size:10px">退店 ${d.staffOut}名</span>`);
+    const promoHtml = (d.promoted||[]).map(p=>`<span style="background:rgba(122,173,170,0.1);color:#7aadaa;border:1px solid rgba(122,173,170,0.25);border-radius:3px;padding:2px 7px;font-size:10px;display:inline-block;margin:2px">${p}</span>`).join('');
+
+    return `<div class="card">
+      <div class="card-title" style="color:${color}">${label}</div>
+      <div style="font-size:9px;color:#555;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px">重点テーマ：<span style="color:#888">${d.theme||'—'}</span></div>
+      <div class="rep-g2" style="margin-bottom:14px">
+        <div>
+          <div style="font-size:9px;color:#6db86d;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">▼ 良かった点</div>
+          ${row(d.good)||'<div style="font-size:11px;color:#444">—</div>'}
+        </div>
+        <div>
+          <div style="font-size:9px;color:#c76b6b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">▼ 課題</div>
+          ${row(d.issues,'#bbb')||'<div style="font-size:11px;color:#444">—</div>'}
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:9px;color:${color};letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">▼ 施策・イベント</div>
+        ${evtRows||'<div style="font-size:11px;color:#444">—</div>'}
+      </div>
+      ${spotRows?`<div style="margin-bottom:14px">
+        <div style="font-size:9px;color:#c4974a;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">▼ 注目スタッフ</div>
+        ${spotRows}
+      </div>`:''}
+      ${(d.concerns||[]).length?`<div style="margin-bottom:14px">
+        <div style="font-size:9px;color:#c76b6b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">▼ 懸念事項</div>
+        ${row(d.concerns.map(c=>'⚑ '+c),'#c76b6b')}
+      </div>`:''}
+      <div class="rep-g2" style="margin-top:4px">
+        <div>
+          <div style="font-size:9px;color:#555;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">▼ 来月の施策</div>
+          ${(d.nextEvents||[]).map(n=>`<div style="font-size:12px;color:#777;padding:3px 0">→ ${n}</div>`).join('')||'<div style="font-size:11px;color:#444">—</div>'}
+        </div>
+        <div>
+          <div style="font-size:9px;color:#555;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">▼ スタッフ動向</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${badges.join('')||'<span style="font-size:11px;color:#444">変動なし</span>'}</div>
+          ${promoHtml?`<div style="margin-top:4px">${promoHtml}</div>`:''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('reportStoreCards').innerHTML =
+    storeCard(r.create,'LUME','#c4974a') + storeCard(r.plus,'LUME PLUS','#7aadaa');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function renderRoadmapFin(){
+  const lk=MONTHS[MONTHS.length-1];
+  const d=MONTHLY[lk];
+  const gs=d.LUME.sales+d.PLUS.sales;
+  const mNum=parseInt(lk.split('-')[1]);
+  document.getElementById('finSalesLabel').textContent=`最新月（${mNum}月）グループ売上`;
+  document.getElementById('finSalesVal').innerHTML=`${Math.round(gs/10000).toLocaleString()}<span class="fin-unit">万円</span>`;
+  document.getElementById('finAnnualVal').innerHTML=`${(gs*12/100000000).toFixed(1)}<span class="fin-unit">億円</span>`;
+}
+Chart.defaults.color='#666';
+renderRoadmapFin();
+renderAll();
+setTimeout(()=>{const sp=document.getElementById('splash');if(sp)sp.remove();},1500);
+</script>
+</body>
+</html>
